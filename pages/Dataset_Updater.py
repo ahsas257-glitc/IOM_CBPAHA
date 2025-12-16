@@ -157,10 +157,35 @@ def get_gspread_client():
     st.stop()
 
 
+# ----------------- AUTH (CLOUD + LOCAL) -----------------
+@st.cache_resource(show_spinner=False)
+def get_gspread_client():
+    try:
+        if "gcp_service_account" in st.secrets:
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(
+                st.secrets["gcp_service_account"], scope
+            )
+            return gspread.authorize(creds)
+    except Exception:
+        pass
+
+    if os.path.exists(json_path):
+        creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
+        return gspread.authorize(creds)
+
+    st.error(
+        "No credentials found. In Streamlit Cloud, add gcp_service_account to Secrets. "
+        "In local mode, ensure json_path exists."
+    )
+    st.stop()
+
+
 @st.cache_resource(show_spinner=False)
 def load_worksheets():
- 
- data_ws = sh.worksheet(data_sheet_name)
+    client = get_gspread_client()
+    sh = client.open_by_key(sheet_id)
+
+    data_ws = sh.worksheet(data_sheet_name)
 
     try:
         corr_ws = sh.worksheet(correction_sheet_name)
@@ -169,6 +194,11 @@ def load_worksheets():
         corr_ws.update("A1:C1", [["_uuid", "Question", "old_value"]])
 
     return data_ws, corr_ws
+
+
+# ✅ IMPORTANT: this must be OUTSIDE functions (no indentation)
+data_ws, corr_ws = load_worksheets()
+
 
 
 # ----------------- Helpers -----------------
