@@ -148,11 +148,6 @@ def get_gspread_client():
 
     return gspread.authorize(creds)
 
-
-client = get_gspread_client()
-
-
-
 # ----------------- Helpers -----------------
 def make_unique_headers(header_row):
     seen = {}
