@@ -162,7 +162,9 @@ def load_worksheets():
     client = get_gspread_client()
     sh = client.open_by_key(sheet_id)
 
-    data_ws = sh.worksheet(data_sheet_name)
+   data_ws, corr_ws = load_worksheets()
+
+client = get_gspread_client()
 
     # Load Correction_Log sheet or create if missing
     try:
