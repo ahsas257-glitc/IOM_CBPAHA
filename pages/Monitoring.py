@@ -40,11 +40,6 @@ sheet = client.open_by_key(sheet_id).worksheet(sheet_name)
 
 data_ws = sh.worksheet(DATA_SHEET)
 
-try:
-    corr_ws = sh.worksheet(CORR_SHEET)
-except gspread.exceptions.WorksheetNotFound:
-    corr_ws = sh.add_worksheet(title=CORR_SHEET, rows="3000", cols="10")
-    corr_ws.update("A1:E1", [["_uuid", "Question", "old_value", "new_value", "Edited_By"]])
 
 
 # ---------------- HELPERS ----------------
