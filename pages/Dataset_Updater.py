@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import re
@@ -120,9 +121,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ----------------- CONFIG -----------------
-json_path = r"D:\IOM_CBPAHA\iomcbpaha-37221bb23bb2.json"
+json_path = r"D:\IOM_CBPAHA\iomcbpaha-37221bb23bb2.json"  # only for local
 sheet_id = "1AHTDIC9eAAitXwlR6wL_ruiTfZx6ytIuzJrV7GkHjQE"
-
 data_sheet_name = "Data_Set"
 correction_sheet_name = "Correction_Log"
 
@@ -131,22 +131,48 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-# ----------------- AUTH -----------------
+# ----------------- AUTH (CLOUD + LOCAL) -----------------
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
+    # Streamlit Cloud: use st.secrets
     try:
-        use_secrets = "gcp_service_account" in st.secrets
+        if "gcp_service_account" in st.secrets:
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(
+                st.secrets["gcp_service_account"], scope
+            )
+            return gspread.authorize(creds)
     except Exception:
-        use_secrets = False
+        pass
 
-    if use_secrets:
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(
-            st.secrets["gcp_service_account"], scope
-        )
-    else:
+    # Local development: fallback to json_path if exists
+    if os.path.exists(json_path):
         creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
+        return gspread.authorize(creds)
 
-    return gspread.authorize(creds)
+    # If neither exists
+    st.error(
+        "No credentials found. In Streamlit Cloud, add gcp_service_account to Secrets. "
+        "In local mode, ensure json_path exists."
+    )
+    st.stop()
+
+
+@st.cache_resource(show_spinner=False)
+def load_worksheets():
+    client = get_gspread_client()
+    sh = client.open_by_key(sheet_id)
+
+    data_ws = sh.worksheet(data_sheet_name)
+
+    # Load Correction_Log sheet or create if missing
+    try:
+        corr_ws = sh.worksheet(correction_sheet_name)
+    except gspread.exceptions.WorksheetNotFound:
+        corr_ws = sh.add_worksheet(title=correction_sheet_name, rows="2000", cols="20")
+        corr_ws.update("A1:C1", [["_uuid", "Question", "old_value"]])
+
+    return data_ws, corr_ws
+
 
 # ----------------- Helpers -----------------
 def make_unique_headers(header_row):
@@ -184,16 +210,7 @@ def load_sheet_dataframe(ws):
 
 
 # ----------------- LOAD SHEETS -----------------
-sh = client.open_by_key(sheet_id)
-data_ws = sh.worksheet(data_sheet_name)
-corr_ws = sh.worksheet(correction_sheet_name)
-
-
-try:
-    corr_ws = sh.worksheet(correction_sheet_name)
-except gspread.exceptions.WorksheetNotFound:
-    corr_ws = sh.add_worksheet(title=correction_sheet_name, rows="2000", cols="20")
-
+data_ws, corr_ws = load_worksheets()
 
 # Load Data_Set as DataFrame
 df_data = load_sheet_dataframe(data_ws)
@@ -210,7 +227,6 @@ if uuid_col is None:
 
 # ----------------- Build detected records -----------------
 records = []
-
 for _, row in df_data.iterrows():
     row_uuid = str(row.get(uuid_col, "")).strip()
     if not row_uuid:
@@ -277,7 +293,6 @@ with right:
 (<b>_uuid, Question, old_value</b>) to be added to the <b>Correction_Log</b>.
 <br><br>
 When clicking <b>Add to Correction_Log</b>, only <b>new</b> records will be added.
-
     """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -317,31 +332,23 @@ if st.button("⬆️ Add to Correction_Log", type="primary"):
         corr_ws.update("A1:C1", [header])
         existing = [header]
 
-    # Load existing rows into dataframe
-    corr_df = pd.DataFrame(existing[1:], columns=existing[0])
+    corr_df = pd.DataFrame(existing[1:], columns=existing[0]) if len(existing) > 1 else pd.DataFrame(columns=existing[0])
 
-    # Build lookup set
     existing_keys = {
         f"{r['_uuid']}|{r['Question']}|{r['old_value']}"
         for _, r in corr_df.iterrows()
     }
 
-    # Identify new rows to add
     rows_to_append = []
     for rec in records:
         key = f"{rec['_uuid']}|{rec['Question']}|{rec['old_value']}"
         if key not in existing_keys:
-            rows_to_append.append([
-                rec["_uuid"],
-                rec["Question"],
-                rec["old_value"]
-            ])
+            rows_to_append.append([rec["_uuid"], rec["Question"], rec["old_value"]])
             existing_keys.add(key)
 
     if not rows_to_append:
         st.warning("No NEW records. Everything already exists.")
     else:
-        # Sort rows by Question before appending
         rows_to_append.sort(key=lambda x: x[1])
 
         next_row = len(existing) + 1
