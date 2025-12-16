@@ -132,7 +132,9 @@ scope = [
 ]
 
 # ----------------- AUTH -----------------
+@st.cache_resource(show_spinner=False)
 def get_gspread_client():
+
     try:
         use_secrets = "gcp_service_account" in st.secrets
     except Exception:
@@ -187,14 +189,15 @@ def load_sheet_dataframe(ws):
 
 
 # ----------------- LOAD SHEETS -----------------
-data_ws = client.open_by_key(sheet_id).worksheet(data_sheet_name)
+sh = client.open_by_key(sheet_id)
 
-# Load Correction_Log sheet or create if missing
+data_ws = sh.worksheet(data_sheet_name)
+
 try:
-    corr_ws = client.open_by_key(sheet_id).worksheet(correction_sheet_name)
+    corr_ws = sh.worksheet(correction_sheet_name)
 except gspread.exceptions.WorksheetNotFound:
-    sh = client.open_by_key(sheet_id)
     corr_ws = sh.add_worksheet(title=correction_sheet_name, rows="2000", cols="20")
+
 
 # Load Data_Set as DataFrame
 df_data = load_sheet_dataframe(data_ws)
