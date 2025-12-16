@@ -214,6 +214,32 @@ try:
 except gspread.exceptions.WorksheetNotFound:
     sh = client.open_by_key(sheet_id)
     corr_ws = sh.add_worksheet(title=correction_sheet_name, rows="2000", cols="20")
+def make_unique_headers(header_row):
+    seen = {}
+    new_cols = []
+    for c in header_row:
+        key = c if c is not None else ""
+        if key in seen:
+            seen[key] += 1
+            new_cols.append(f"{key}_{seen[key]}")
+        else:
+            seen[key] = 0
+            new_cols.append(key)
+    return new_cols
+
+
+def load_sheet_dataframe(ws):
+    values = ws.get_all_values()
+    if not values:
+        return pd.DataFrame()
+
+    header = make_unique_headers(values[0])
+    data = values[1:]
+
+    if not data:
+        return pd.DataFrame(columns=header)
+
+    return pd.DataFrame(data, columns=header)
 
 # Load Data_Set as DataFrame
 df_data = load_sheet_dataframe(data_ws)
