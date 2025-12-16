@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import re
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+#from oauth2client.service_account import ServiceAccountCredentials
 
 # ===================== PAGE CONFIG (MUST BE FIRST) =====================
 st.set_page_config(page_title="Correction Log Helper", page_icon="📝", layout="wide")
