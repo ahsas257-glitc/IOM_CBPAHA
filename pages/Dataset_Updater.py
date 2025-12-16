@@ -121,7 +121,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ----------------- CONFIG -----------------
-json_path = r"D:\IOM_CBPAHA\iomcbpaha-37221bb23bb2.json"  # only for local
+json_path = r"D:\IOM_CBPAHA\iomcbpaha-37221bb23bb2.json"  # local only
 sheet_id = "1AHTDIC9eAAitXwlR6wL_ruiTfZx6ytIuzJrV7GkHjQE"
 data_sheet_name = "Data_Set"
 correction_sheet_name = "Correction_Log"
@@ -134,7 +134,7 @@ scope = [
 # ----------------- AUTH (CLOUD + LOCAL) -----------------
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
-    # Streamlit Cloud: use st.secrets
+    # Streamlit Cloud: use secrets
     try:
         if "gcp_service_account" in st.secrets:
             creds = ServiceAccountCredentials.from_json_keyfile_dict(
@@ -144,15 +144,15 @@ def get_gspread_client():
     except Exception:
         pass
 
-    # Local development: fallback to json_path if exists
+    # Local: fallback to file
     if os.path.exists(json_path):
         creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
         return gspread.authorize(creds)
 
-    # If neither exists
     st.error(
-        "No credentials found. In Streamlit Cloud, add gcp_service_account to Secrets. "
-        "In local mode, ensure json_path exists."
+        "No credentials found.\n\n"
+        "- Streamlit Cloud: add gcp_service_account in Secrets\n"
+        "- Local: make sure json_path exists"
     )
     st.stop()
 
@@ -162,11 +162,8 @@ def load_worksheets():
     client = get_gspread_client()
     sh = client.open_by_key(sheet_id)
 
-   data_ws, corr_ws = load_worksheets()
+    data_ws = sh.worksheet(data_sheet_name)
 
-client = get_gspread_client()
-
-    # Load Correction_Log sheet or create if missing
     try:
         corr_ws = sh.worksheet(correction_sheet_name)
     except gspread.exceptions.WorksheetNotFound:
@@ -290,11 +287,11 @@ with right:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.subheader("ℹ️ What this page does")
     st.markdown("""
-   This tool scans the <b>Data_Set</b> and detects any cell containing
-<b>Dari/Pashto</b> text. Each detected item is prepared in the format
-(<b>_uuid, Question, old_value</b>) to be added to the <b>Correction_Log</b>.
-<br><br>
-When clicking <b>Add to Correction_Log</b>, only <b>new</b> records will be added.
+    This tool scans the <b>Data_Set</b> and detects any cell containing
+    <b>Dari/Pashto</b> text. Each detected item is prepared in the format
+    (<b>_uuid, Question, old_value</b>) to be added to the <b>Correction_Log</b>.
+    <br><br>
+    When clicking <b>Add to Correction_Log</b>, only <b>new</b> records will be added.
     """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -328,7 +325,6 @@ if st.button("⬆️ Add to Correction_Log", type="primary"):
 
     existing = corr_ws.get_all_values()
 
-    # If sheet is brand new → create header
     if not existing:
         header = ["_uuid", "Question", "old_value"]
         corr_ws.update("A1:C1", [header])
