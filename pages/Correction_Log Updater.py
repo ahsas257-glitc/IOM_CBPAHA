@@ -162,14 +162,6 @@ def load_worksheets():
     return sh.worksheet(data_sheet_name), sh.worksheet(correction_sheet_name)
 
 
-# ----------------- LOAD SHEETS -----------------
-data_ws, corr_ws = load_worksheets()
-
-# Load Data_Set as DataFrame
-df_data = load_sheet_dataframe(data_ws)
-
-
-
 # ----------------- Helpers -----------------
 def make_unique_headers(header_row):
     seen = {}
