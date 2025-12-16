@@ -132,8 +132,42 @@ scope = [
 ]
 
 # ----------------- AUTH -----------------
-creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
-client = gspread.authorize(creds)
+import streamlit as st
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+
+def get_gspread_client():
+    """
+    Uses Streamlit Cloud secrets if available,
+    otherwise falls back to local JSON file (for local development).
+    """
+    try:
+        use_secrets = "gcp_service_account" in st.secrets
+    except Exception:
+        use_secrets = False
+
+    if use_secrets:
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(
+            st.secrets["gcp_service_account"], scope
+        )
+    else:
+        creds = ServiceAccountCredentials.from_json_keyfile_name(
+            json_path, scope
+        )
+
+    return gspread.authorize(creds)
+
+
+@st.cache_resource(show_spinner=False)
+def load_worksheets():
+    client = get_gspread_client()
+    sh = client.open_by_key(sheet_id)
+    return (
+        sh.worksheet(data_sheet_name),
+        sh.worksheet(correction_sheet_name)
+    )
+
 
 
 # ----------------- Helpers -----------------
