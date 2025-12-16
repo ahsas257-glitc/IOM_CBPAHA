@@ -334,8 +334,9 @@ st.markdown(
 )
 
 # ---------------- DATA LOADING ----------------
-try:
-  def get_gspread_client():
+
+# ---------------- DATA LOADING ----------------
+def get_gspread_client():
     try:
         use_secrets = "gcp_service_account" in st.secrets
     except Exception:
@@ -350,8 +351,9 @@ try:
 
     return gspread.authorize(creds)
 
-client = get_gspread_client()
 
+try:
+    client = get_gspread_client()
     ws = client.open_by_key(sheet_id).worksheet(DATA_SHEET)
     df = load_df(ws)
 
@@ -364,8 +366,6 @@ client = get_gspread_client()
 except Exception as e:
     st.error(f"Error loading data: {e}")
     st.stop()
-
-libs_ok = {"altair": ALTair_OK, "mpl": MPL_OK, "sns": SNS_OK, "scipy": SCIPY_OK}
 
 # ---------------- CONTROL PANEL ----------------
 st.markdown('<div class="glass-card">', unsafe_allow_html=True)
