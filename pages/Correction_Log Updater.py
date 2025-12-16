@@ -132,10 +132,6 @@ scope = [
 ]
 
 # ----------------- AUTH -----------------
-import streamlit as st
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-
 def get_gspread_client():
     """
     Uses Streamlit Cloud secrets if available,
@@ -162,15 +158,8 @@ def get_gspread_client():
 def load_worksheets():
     client = get_gspread_client()
     sh = client.open_by_key(sheet_id)
-    data_ws = sh.worksheet(data_sheet_name)
-
-    try:
-        corr_ws = sh.worksheet(correction_sheet_name)
-    except gspread.exceptions.WorksheetNotFound:
-        corr_ws = sh.add_worksheet(title=correction_sheet_name, rows="2000", cols="20")
-
-    return data_ws, corr_ws
-
+    # اگر Correction_Log وجود نداشت، اینجا خطا می‌دهد (مثل قبل)
+    return sh.worksheet(data_sheet_name), sh.worksheet(correction_sheet_name)
 
 
 # ----------------- LOAD SHEETS -----------------
@@ -178,7 +167,6 @@ data_ws, corr_ws = load_worksheets()
 
 # Load Data_Set as DataFrame
 df_data = load_sheet_dataframe(data_ws)
-
 
 
 
