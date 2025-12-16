@@ -134,7 +134,6 @@ scope = [
 # ----------------- AUTH -----------------
 @st.cache_resource(show_spinner=False)
 def get_gspread_client():
-
     try:
         use_secrets = "gcp_service_account" in st.secrets
     except Exception:
@@ -148,6 +147,7 @@ def get_gspread_client():
         creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
 
     return gspread.authorize(creds)
+
 
 client = get_gspread_client()
 
@@ -190,8 +190,9 @@ def load_sheet_dataframe(ws):
 
 # ----------------- LOAD SHEETS -----------------
 sh = client.open_by_key(sheet_id)
-
 data_ws = sh.worksheet(data_sheet_name)
+corr_ws = sh.worksheet(correction_sheet_name)
+
 
 try:
     corr_ws = sh.worksheet(correction_sheet_name)
