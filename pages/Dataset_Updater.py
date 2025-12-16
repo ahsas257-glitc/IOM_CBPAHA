@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-import io
+import re
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 # ===================== PAGE CONFIG (MUST BE FIRST) =====================
-st.set_page_config(page_title="Excel Date Filter & Google Sheet Updater", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Correction Log Helper", page_icon="📝", layout="wide")
 
 # ===================== LIQUID GLASS UI (STYLE ONLY) =====================
 st.markdown("""
@@ -105,33 +105,33 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ===================== HERO (UI ONLY) =====================
+# ===================== HERO =====================
 st.markdown("""
 <div class="glass-hero">
   <div style="text-align:center;">
-    <h1 style="margin:0; font-size:2.35rem;" class="gradient-text">📊 Excel Start-Date Filter & Google Sheet Updater</h1>
+    <h1 style="margin:0; font-size:2.35rem;" class="gradient-text">📝 Correction Log Helper</h1>
     <div style="display:flex; justify-content:center; align-items:center; margin-top:10px;">
       <span class="pulse-dot"></span>
-      <span style="color:rgba(255,255,255,0.75); letter-spacing:2px;">
-        FILTER → REMOVE UUIDs → UPLOAD NEW RECORDS → DOWNLOAD
-      </span>
+      <span style="color:rgba(255,255,255,0.75); letter-spacing:2px;">DETECT DARI / PASHTO → PUSH TO CORRECTION_LOG</span>
       <span class="pulse-dot"></span>
     </div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ===================== ORIGINAL CODE (LOGIC UNCHANGED) =====================
+# ----------------- CONFIG -----------------
 json_path = r"D:\IOM_CBPAHA\iomcbpaha-37221bb23bb2.json"
 sheet_id = "1AHTDIC9eAAitXwlR6wL_ruiTfZx6ytIuzJrV7GkHjQE"
-sheet_name = "Data_Set"
-remove_sheet_name = "Remove_from_DS"
+
+data_sheet_name = "Data_Set"
+correction_sheet_name = "Correction_Log"
 
 scope = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
 
+# ----------------- AUTH -----------------
 def get_gspread_client():
     try:
         use_secrets = "gcp_service_account" in st.secrets
@@ -148,152 +148,215 @@ def get_gspread_client():
     return gspread.authorize(creds)
 
 client = get_gspread_client()
-sheet = client.open_by_key(sheet_id).worksheet(sheet_name)
 
 
 
-# Read removal keys from Remove_from_DS sheet
-try:
-    remove_sheet = client.open_by_key(sheet_id).worksheet(remove_sheet_name)
-    remove_values = remove_sheet.get_all_values()
-    if len(remove_values) > 0:
-        headers = remove_values[0]
-        if "_uuid" in headers:
-            remove_df = pd.DataFrame(remove_values[1:], columns=headers)
-            if "_uuid" in remove_df.columns:
-                remove_uuids = set(remove_df["_uuid"].astype(str))
-            else:
-                remove_uuids = set()
-        else:
-            remove_uuids = set()
-    else:
-        remove_uuids = set()
-except Exception as e:
-    st.warning(f"⚠️ Could not read Remove_from_DS sheet: {e}")
-    remove_uuids = set()
-
-# Read existing data
-all_values = sheet.get_all_values()
-if len(all_values) == 0:
-    existing_data = pd.DataFrame()
-    existing_uuids = set()
-else:
-    cols = all_values[0]
+# ----------------- Helpers -----------------
+def make_unique_headers(header_row):
     seen = {}
     new_cols = []
-    for c in cols:
-        if c in seen:
-            seen[c] += 1
-            new_cols.append(f"{c}_{seen[c]}")
+    for c in header_row:
+        key = c if c is not None else ""
+        if key in seen:
+            seen[key] += 1
+            new_cols.append(f"{key}_{seen[key]}")
         else:
-            seen[c] = 0
-            new_cols.append(c)
-    existing_data = pd.DataFrame(all_values[1:], columns=new_cols)
-    if "_uuid" in existing_data.columns:
-        existing_uuids = set(existing_data["_uuid"].astype(str))
-    else:
-        existing_uuids = set()
+            seen[key] = 0
+            new_cols.append(key)
+    return new_cols
 
-# ===================== UI (ENGLISH ONLY) =====================
+
+def contains_persoarabic(text):
+    if text is None:
+        return False
+    return bool(re.search(r'[\u0600-\u06FF]+', str(text)))
+
+
+def load_sheet_dataframe(ws):
+    values = ws.get_all_values()
+    if not values:
+        return pd.DataFrame()
+
+    header = make_unique_headers(values[0])
+    data = values[1:]
+
+    if not data:
+        return pd.DataFrame(columns=header)
+
+    return pd.DataFrame(data, columns=header)
+
+
+# ----------------- LOAD SHEETS -----------------
+data_ws = client.open_by_key(sheet_id).worksheet(data_sheet_name)
+
+# Load Correction_Log sheet or create if missing
+try:
+    corr_ws = client.open_by_key(sheet_id).worksheet(correction_sheet_name)
+except gspread.exceptions.WorksheetNotFound:
+    sh = client.open_by_key(sheet_id)
+    corr_ws = sh.add_worksheet(title=correction_sheet_name, rows="2000", cols="20")
+
+# Load Data_Set as DataFrame
+df_data = load_sheet_dataframe(data_ws)
+
+# ===================== TOP SUMMARY (UI ONLY) =====================
+if df_data.empty:
+    st.warning("Data_Set sheet is empty.")
+    st.stop()
+
+uuid_col = next((c for c in df_data.columns if c.startswith("_uuid")), None)
+if uuid_col is None:
+    st.error("Column '_uuid' not found in Data_Set.")
+    st.stop()
+
+# ----------------- Build detected records -----------------
+records = []
+
+for _, row in df_data.iterrows():
+    row_uuid = str(row.get(uuid_col, "")).strip()
+    if not row_uuid:
+        continue
+
+    for col in df_data.columns:
+        if col == uuid_col:
+            continue
+
+        val = row[col]
+        if contains_persoarabic(val):
+            records.append({
+                "_uuid": row_uuid,
+                "Question": col,
+                "old_value": val
+            })
+
+# ===================== SUMMARY CARDS (UI ONLY) =====================
+c1, c2, c3 = st.columns(3)
+with c1:
+    st.markdown(f"""
+    <div class="card">
+      <div class="badge badge-blue">DATA_SET</div>
+      <div style="font-size:1.65rem; font-weight:800; color:#fff;">{len(df_data):,}</div>
+      <div class="small-note">Total rows loaded</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with c2:
+    st.markdown(f"""
+    <div class="card">
+      <div class="badge badge-purple">UUID COLUMN</div>
+      <div style="font-size:1.1rem; font-weight:800; color:#fff;">{uuid_col}</div>
+      <div class="small-note">Detected key field</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with c3:
+    st.markdown(f"""
+    <div class="card">
+      <div class="badge badge-green">DETECTED</div>
+      <div style="font-size:1.65rem; font-weight:800; color:#fff;">{len(records):,}</div>
+      <div class="small-note">Cells containing Dari/Pashto</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown('<hr class="divider">', unsafe_allow_html=True)
+
+# ===================== PREVIEWS (UI ONLY) =====================
+left, right = st.columns([1, 1])
+
+with left:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("📁 Data_Set Preview")
+    st.dataframe(df_data.head(), use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with right:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.subheader("ℹ️ What this page does")
+    st.markdown("""
+   This tool scans the <b>Data_Set</b> and detects any cell containing
+<b>Dari/Pashto</b> text. Each detected item is prepared in the format
+(<b>_uuid, Question, old_value</b>) to be added to the <b>Correction_Log</b>.
+<br><br>
+When clicking <b>Add to Correction_Log</b>, only <b>new</b> records will be added.
+
+    """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown('<hr class="divider">', unsafe_allow_html=True)
+
+# ===================== DETECTED TABLE =====================
+if not records:
+    st.info("No Dari/Pashto text found.")
+    st.stop()
+
+out_df = pd.DataFrame(records).sort_values("Question")
+
+st.markdown('<div class="card">', unsafe_allow_html=True)
+st.subheader("🔎 Detected Dari/Pashto Records (sorted by Question)")
+st.dataframe(out_df, use_container_width=True)
+st.markdown("</div>", unsafe_allow_html=True)
+
+st.markdown('<hr class="divider">', unsafe_allow_html=True)
+
 st.markdown("""
 <div class="card">
-  <div class="badge badge-blue">UPLOAD</div>
+  <div class="badge badge-orange">NOTE</div>
   <div class="small-note">
-    Upload an Excel file, select a date column, choose a start date, then filter the dataset.
-    Records whose <b>_uuid</b> exists in <b>Remove_from_DS</b> will be excluded before upload.
+    When you click <b>Add to Correction_Log</b>, only <b>NEW</b> records will be added.
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-dataset = st.file_uploader("📂 Upload your Excel dataset:", type=["xlsx"])
+# ----------------- SAVE TO GOOGLE SHEET -----------------
+if st.button("⬆️ Add to Correction_Log", type="primary"):
 
-if dataset:
-    df = pd.read_excel(dataset)
+    existing = corr_ws.get_all_values()
 
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.markdown("### 📁 Dataset Preview")
-    st.dataframe(df.head(), use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    # If sheet is brand new → create header
+    if not existing:
+        header = ["_uuid", "Question", "old_value"]
+        corr_ws.update("A1:C1", [header])
+        existing = [header]
 
-    date_column = st.selectbox("🗂️ Select Date Column:", df.columns)
-    df[date_column] = pd.to_datetime(df[date_column], errors="coerce")
+    # Load existing rows into dataframe
+    corr_df = pd.DataFrame(existing[1:], columns=existing[0])
 
-    if df[date_column].isnull().all():
-        st.error("❌ Selected column does NOT contain valid date values!")
+    # Build lookup set
+    existing_keys = {
+        f"{r['_uuid']}|{r['Question']}|{r['old_value']}"
+        for _, r in corr_df.iterrows()
+    }
+
+    # Identify new rows to add
+    rows_to_append = []
+    for rec in records:
+        key = f"{rec['_uuid']}|{rec['Question']}|{rec['old_value']}"
+        if key not in existing_keys:
+            rows_to_append.append([
+                rec["_uuid"],
+                rec["Question"],
+                rec["old_value"]
+            ])
+            existing_keys.add(key)
+
+    if not rows_to_append:
+        st.warning("No NEW records. Everything already exists.")
     else:
-        start_date = st.date_input("📅 Select Start Date")
-        filtered_df = df[df[date_column] >= pd.to_datetime(start_date)].copy()
+        # Sort rows by Question before appending
+        rows_to_append.sort(key=lambda x: x[1])
 
-        # Remove records whose key exists in Remove_from_DS
-        if "_uuid" in filtered_df.columns:
-            filtered_df = filtered_df[~filtered_df["_uuid"].astype(str).isin(remove_uuids)]
+        next_row = len(existing) + 1
+        corr_ws.update(
+            f"A{next_row}:C{next_row + len(rows_to_append) - 1}",
+            rows_to_append
+        )
 
-        for col in filtered_df.select_dtypes(include=["float", "int"]).columns:
-            filtered_df[col] = pd.to_numeric(filtered_df[col], errors="coerce").astype("Int64")
-
-        st.markdown('<hr class="divider">', unsafe_allow_html=True)
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("### 🔎 Filtered Data")
-        max_cells = 262144
-        total_cells = filtered_df.shape[0] * filtered_df.shape[1]
-        if total_cells <= max_cells:
-            styled = filtered_df.style.set_properties(**{
-                'background-color': '#F9F9F9',
-                'color': '#2E4053',
-                'border-color': '#D5DBDB',
-                'border-width': '1px',
-                'border-style': 'solid'
-            }).highlight_max(color='#82E0AA').highlight_min(color='#F1948A')
-            st.dataframe(styled, use_container_width=True)
-        else:
-            st.info(f"ℹ️ Data too large for styled view ({total_cells} cells). Showing plain table for performance.")
-            st.dataframe(filtered_df, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.success(f"✅ {len(rows_to_append)} new records added!")
 
         st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("""
-        <div class="badge badge-green">UPLOAD TO GOOGLE SHEET</div>
-        <div class="small-note">
-          Click the button below to append only <b>new</b> records to <b>Data_Set</b> (based on <b>_uuid</b>).
-        </div>
-        """, unsafe_allow_html=True)
-
-        if st.button("⬆️ Upload New Records to Google Sheet", type="primary"):
-            if "_uuid" not in filtered_df.columns:
-                st.error("❌ ERROR: Column '_uuid' not found in dataset!")
-            else:
-                new_rows = filtered_df[~filtered_df["_uuid"].astype(str).isin(existing_uuids)]
-                if new_rows.empty:
-                    st.warning("⚠️ No new records to add. All UUIDs already exist.")
-                else:
-                    clean_rows = new_rows.copy()
-                    for col in clean_rows.columns:
-                        if pd.api.types.is_datetime64_any_dtype(clean_rows[col]):
-                            clean_rows[col] = clean_rows[col].dt.strftime("%Y-%m-%d")
-                    rows_to_upload = clean_rows.astype(str).replace("nan", "").replace("<NA>", "").values.tolist()
-                    sheet.append_rows(rows_to_upload)
-                    st.success(f"✅ {len(new_rows)} new rows successfully added to Google Sheet!")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        # Download filtered data as Excel (unchanged logic)
-        buffer = io.BytesIO()
-        with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-            for col in filtered_df.select_dtypes(include=["float", "int"]).columns:
-                filtered_df[col] = pd.to_numeric(filtered_df[col], errors="coerce").astype("Int64")
-            filtered_df.to_excel(writer, sheet_name="FilteredData", index=False)
-        buffer.seek(0)
-
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("""
-        <div class="badge badge-purple">DOWNLOAD</div>
-        <div class="small-note">Download the filtered output as an Excel file.</div>
-        """, unsafe_allow_html=True)
-
-        st.download_button(
-            label="📥 Download filtered data as Excel",
-            data=buffer,
-            file_name="filtered_data_output.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        st.subheader("✅ Newly Added Rows (sorted by Question)")
+        st.dataframe(
+            pd.DataFrame(rows_to_append, columns=["_uuid", "Question", "old_value"]).sort_values("Question"),
+            use_container_width=True
         )
         st.markdown("</div>", unsafe_allow_html=True)
