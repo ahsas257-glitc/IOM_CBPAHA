@@ -132,9 +132,25 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
-client = gspread.authorize(creds)
+def get_gspread_client():
+    try:
+        use_secrets = "gcp_service_account" in st.secrets
+    except Exception:
+        use_secrets = False
+
+    if use_secrets:
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(
+            st.secrets["gcp_service_account"], scope
+        )
+    else:
+        creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
+
+    return gspread.authorize(creds)
+
+client = get_gspread_client()
 sheet = client.open_by_key(sheet_id).worksheet(sheet_name)
+
+
 
 # Read removal keys from Remove_from_DS sheet
 try:
