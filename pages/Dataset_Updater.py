@@ -198,7 +198,6 @@ def load_sheet_dataframe(ws):
     values = ws.get_all_values()
     if not values:
         return pd.DataFrame()
-
     header = make_unique_headers(values[0])
     data = values[1:]
 
