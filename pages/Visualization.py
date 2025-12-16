@@ -403,6 +403,8 @@ with c4:
     top_n = st.slider("Top N", 5, 100, 20)
 
 st.markdown("</div>", unsafe_allow_html=True)
+# Always define libs_ok before using it
+libs_ok = {"altair": ALTair_OK, "mpl": MPL_OK, "sns": SNS_OK, "scipy": SCIPY_OK}
 
 # ---------------- CHART SELECTION ----------------
 st.markdown('<div class="glass-card">', unsafe_allow_html=True)
