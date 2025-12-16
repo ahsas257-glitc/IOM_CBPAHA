@@ -137,6 +137,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 
+# ----------------- AUTH -----------------
 def get_gspread_client():
     """
     Uses Streamlit Cloud secrets if available,
@@ -163,10 +164,16 @@ def get_gspread_client():
 def load_worksheets():
     client = get_gspread_client()
     sh = client.open_by_key(sheet_id)
-    return (
-        sh.worksheet(data_sheet_name),
-        sh.worksheet(correction_sheet_name)
-    )
+    # اگر Correction_Log وجود نداشت، اینجا خطا می‌دهد (مثل قبل)
+    return sh.worksheet(data_sheet_name), sh.worksheet(correction_sheet_name)
+
+
+# ----------------- LOAD SHEETS -----------------
+data_ws, corr_ws = load_worksheets()
+
+# Load Data_Set as DataFrame
+df_data = load_sheet_dataframe(data_ws)
+
 
 
 
