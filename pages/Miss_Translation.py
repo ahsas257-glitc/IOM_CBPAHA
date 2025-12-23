@@ -5,8 +5,8 @@ from io import BytesIO
 
 # تنظیمات صفحه
 st.set_page_config(
-    page_title="Missing Translation Extractor", 
-    page_icon="🗂️", 
+    page_title="Missing Translation Extractor",
+    page_icon="🗂️",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -16,16 +16,14 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-* {
-    font-family: 'Inter', sans-serif;
-}
+* { font-family: 'Inter', sans-serif; }
 
 .stApp {
-    background: linear-gradient(-45deg, 
-        #f0f5ff 0%, 
-        #e8f0ff 25%, 
-        #f8fbff 50%, 
-        #ebf2ff 75%, 
+    background: linear-gradient(-45deg,
+        #f0f5ff 0%,
+        #e8f0ff 25%,
+        #f8fbff 50%,
+        #ebf2ff 75%,
         #f0f5ff 100%);
     background-size: 400% 400%;
     animation: gradientBG 15s ease infinite;
@@ -46,7 +44,7 @@ st.markdown("""
     border-radius: 24px;
     padding: 24px 32px;
     margin-bottom: 30px;
-    box-shadow: 
+    box-shadow:
         0 8px 32px rgba(31, 38, 135, 0.07),
         inset 0 1px 0 rgba(255, 255, 255, 0.6),
         inset 0 -1px 0 rgba(0, 0, 0, 0.05);
@@ -57,13 +55,11 @@ st.markdown("""
 .main-header::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: 0; left: 0; right: 0;
     height: 1px;
-    background: linear-gradient(90deg, 
-        transparent, 
-        rgba(120, 140, 220, 0.3), 
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(120, 140, 220, 0.3),
         transparent);
 }
 
@@ -75,7 +71,7 @@ st.markdown("""
     border-radius: 20px;
     padding: 22px 26px;
     margin-bottom: 24px;
-    box-shadow: 
+    box-shadow:
         0 12px 28px rgba(31, 38, 135, 0.08),
         inset 0 1px 0 rgba(255, 255, 255, 0.7),
         0 1px 3px rgba(0, 0, 0, 0.02);
@@ -83,7 +79,7 @@ st.markdown("""
 }
 
 .glass-card:hover {
-    box-shadow: 
+    box-shadow:
         0 16px 36px rgba(31, 38, 135, 0.12),
         inset 0 1px 0 rgba(255, 255, 255, 0.8),
         0 2px 6px rgba(0, 0, 0, 0.03);
@@ -98,14 +94,6 @@ st.markdown("""
     display: flex;
     align-items: center;
     gap: 10px;
-}
-
-.file-uploader {
-    background: rgba(255, 255, 255, 0.7) !important;
-    backdrop-filter: blur(10px) !important;
-    border: 2px dashed rgba(120, 140, 220, 0.4) !important;
-    border-radius: 16px !important;
-    padding: 30px !important;
 }
 
 .stButton > button {
@@ -127,28 +115,6 @@ st.markdown("""
     background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
 }
 
-.download-btn {
-    background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%) !important;
-    box-shadow: 0 6px 20px rgba(0, 176, 155, 0.3) !important;
-}
-
-.download-btn:hover {
-    background: linear-gradient(135deg, #009b87 0%, #88b837 100%) !important;
-    box-shadow: 0 10px 25px rgba(0, 176, 155, 0.4) !important;
-}
-
-selectbox, .stSelectbox {
-    background: rgba(255, 255, 255, 0.8) !important;
-    border: 1px solid rgba(120, 140, 220, 0.3) !important;
-    border-radius: 12px !important;
-}
-
-.multiselect {
-    background: rgba(255, 255, 255, 0.8) !important;
-    border: 1px solid rgba(120, 140, 220, 0.3) !important;
-    border-radius: 12px !important;
-}
-
 .stDataFrame {
     background: rgba(255, 255, 255, 0.5) !important;
     border-radius: 16px !important;
@@ -156,43 +122,11 @@ selectbox, .stSelectbox {
     overflow: hidden;
 }
 
-.stCheckbox > label {
-    color: #333 !important;
-    font-weight: 500 !important;
-}
-
-.stTextInput > div > input {
-    background: rgba(255, 255, 255, 0.8) !important;
-    border: 1px solid rgba(120, 140, 220, 0.3) !important;
-    border-radius: 12px !important;
-}
-
-.stSuccess {
-    background: rgba(76, 175, 80, 0.15) !important;
-    border: 1px solid rgba(76, 175, 80, 0.3) !important;
-    border-radius: 12px !important;
-    backdrop-filter: blur(10px) !important;
-}
-
-.stWarning {
-    background: rgba(255, 152, 0, 0.15) !important;
-    border: 1px solid rgba(255, 152, 0, 0.3) !important;
-    border-radius: 12px !important;
-    backdrop-filter: blur(10px) !important;
-}
-
-.stInfo {
-    background: rgba(33, 150, 243, 0.15) !important;
-    border: 1px solid rgba(33, 150, 243, 0.3) !important;
-    border-radius: 12px !important;
-    backdrop-filter: blur(10px) !important;
-}
-
 .divider {
     height: 1px;
-    background: linear-gradient(90deg, 
-        transparent, 
-        rgba(120, 140, 220, 0.4), 
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(120, 140, 220, 0.4),
         transparent);
     margin: 28px 0;
     border: none;
@@ -254,10 +188,13 @@ def read_dataset(uploaded_file):
     name = uploaded_file.name.lower()
     if name.endswith(".csv"):
         df = pd.read_csv(uploaded_file, dtype=str, keep_default_na=False)
-        return {"type": "csv", "df": df, "sheets": None}
+        return {"type": "csv", "df": df, "sheets": None, "xls": None}
+
     if name.endswith(".xlsx") or name.endswith(".xlsm"):
         xls = pd.ExcelFile(uploaded_file)
-        return {"type": "excel", "xls": xls, "sheets": xls.sheet_names}
+        # در pandas این property اسمش sheet_names است (درست است)
+        return {"type": "excel", "df": None, "sheets": xls.sheet_names, "xls": xls}
+
     raise ValueError("Only CSV or XLSX/XLSM files are supported.")
 
 def columns_with_dari_pashto(df: pd.DataFrame, limit_scan: int = 2000) -> list[str]:
@@ -268,9 +205,8 @@ def columns_with_dari_pashto(df: pd.DataFrame, limit_scan: int = 2000) -> list[s
         return cols
     sample = df.head(n)
     for c in sample.columns:
-        s = sample[c]
         found = False
-        for v in s:
+        for v in sample[c]:
             if is_dari_pashto_text(v):
                 found = True
                 break
@@ -301,48 +237,28 @@ def extract_translation_list(df: pd.DataFrame, key_col: str, exclude_cols: list[
         out = out.drop_duplicates(subset=["key", "label", "value"]).reset_index(drop=True)
     return out
 
-def write_back_to_excel(original_file, selected_sheet, out_df, mode, output_sheet_name):
-    """نوشتن داده‌ها به فایل اکسل"""
-    import openpyxl
-
-    original_file.seek(0)
-    wb = openpyxl.load_workbook(original_file)
-
-    target_sheet = selected_sheet
-    if mode == "Create new sheet":
-        base = (output_sheet_name or "").strip() or "Translation_List"
-        name = base
-        i = 1
-        while name in wb.sheet_names:
-            i += 1
-            name = f"{base}_{i}"
-        wb.create_sheet(title=name)
-        target_sheet = name
-
-    ws = wb[target_sheet]
-
-    if mode == "Overwrite selected sheet":
-        ws.delete_rows(1, ws.max_row)
-
-    ws["A1"] = "key"
-    ws["B1"] = "label"
-    ws["C1"] = "value"
-
-    for r_idx, row in enumerate(out_df.itertuples(index=False), start=2):
-        ws.cell(row=r_idx, column=1, value=row.key)
-        ws.cell(row=r_idx, column=2, value=row.label)
-        ws.cell(row=r_idx, column=3, value=row.value)
-
-    buff = BytesIO()
-    wb.save(buff)
-    buff.seek(0)
-    return buff, target_sheet
-
 def build_excel_from_df(out_df: pd.DataFrame, sheet_name: str):
-    """ساخت فایل اکسل از دیتافریم"""
+    """ساخت فایل اکسل فقط با یک شیت (نه کل دیتاست)"""
+    import openpyxl
+    from openpyxl.utils import get_column_letter
+
     buff = BytesIO()
+    sheet = (sheet_name or "Translation_List").strip() or "Translation_List"
+
     with pd.ExcelWriter(buff, engine="openpyxl") as writer:
-        out_df.to_excel(writer, sheet_name=sheet_name or "Translation_List", index=False)
+        out_df.to_excel(writer, sheet_name=sheet, index=False)
+
+        ws = writer.book[sheet]
+
+        # Freeze header
+        ws.freeze_panes = "A2"
+
+        # Auto width (بر اساس 500 ردیف اول برای سرعت)
+        for col_idx, col_name in enumerate(out_df.columns, start=1):
+            values = out_df[col_name].head(500).astype(str).tolist()
+            max_len = max([len(str(col_name))] + [len(v) for v in values if v is not None])
+            ws.column_dimensions[get_column_letter(col_idx)].width = min(max_len + 3, 60)
+
     buff.seek(0)
     return buff
 
@@ -390,7 +306,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 uploaded = st.file_uploader(
-    "Drag and drop or click to upload Excel (.xlsx/.xlsm) or CSV file", 
+    "Drag and drop or click to upload Excel (.xlsx/.xlsm) or CSV file",
     type=["xlsx", "xlsm", "csv"],
     label_visibility="collapsed"
 )
@@ -448,10 +364,9 @@ with col1:
         index=0,
         help="This column will be used as the identifier for translations"
     )
-    
-    # تشخیص ستون‌های فارسی/پشتو
+
     cols_dp = columns_with_dari_pashto(df, limit_scan=2000)
-    
+
     if cols_dp:
         exclude_cols = st.multiselect(
             "🚫 Exclude Columns",
@@ -464,23 +379,15 @@ with col1:
         st.info("ℹ️ No columns with Dari/Pashto text were detected")
 
 with col2:
-    if meta["type"] == "excel":
-        write_mode = st.selectbox(
-            "📝 Output Location",
-            ["Create new sheet", "Overwrite selected sheet"],
-            index=0
-        )
-        output_sheet_name = st.text_input(
-            "Output Sheet Name", 
-            value="Translation_List",
-            help="Name of the sheet where translations will be saved"
-        )
-    else:
-        write_mode = "Create new sheet"
-        output_sheet_name = "Translation_List"
-    
+    # مهم: خروجی فقط یک شیت خواهد بود (همیشه)
+    output_sheet_name = st.text_input(
+        "Output Sheet Name",
+        value="Translation_List",
+        help="Name of the single sheet inside the exported Excel file"
+    )
+
     remove_duplicates = st.checkbox(
-        "Remove duplicate translations", 
+        "Remove duplicate translations",
         value=True,
         help="Remove rows with identical key, label, and value"
     )
@@ -493,57 +400,45 @@ st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 if st.button("🚀 Generate Translation List", type="primary", use_container_width=True):
     with st.spinner("🔍 Extracting translations..."):
         out_df = extract_translation_list(df, key_col, exclude_cols, remove_duplicates)
-    
+
     if out_df.empty:
         st.warning("⚠️ No Dari/Pashto text was found in the dataset (or all relevant columns were excluded)")
         st.stop()
-    
+
     # به‌روزرسانی آمار ترجمه‌ها
     st.markdown(f"""
     <script>
     document.getElementById('translations-count').textContent = '{len(out_df):,}';
     </script>
     """, unsafe_allow_html=True)
-    
+
     st.success(f"✅ Successfully extracted {len(out_df):,} translation entries!")
-    
+
     # نمایش نتایج
     st.markdown('<div class="glass-card"><div class="section-title">📋 Extracted Translations</div>', unsafe_allow_html=True)
     st.dataframe(out_df.head(200), use_container_width=True, height=450)
     st.markdown("</div>", unsafe_allow_html=True)
-    
+
     # دکمه دانلود
     col_d1, col_d2 = st.columns(2)
-    
+
     with col_d1:
-        if meta["type"] == "excel":
-            out_file, target_sheet = write_back_to_excel(
-                uploaded,
-                selected_sheet,
-                out_df,
-                mode=write_mode,
-                output_sheet_name=output_sheet_name,
-            )
-            st.download_button(
-                "📥 Download Updated Excel File",
-                data=out_file,
-                file_name=f"translations_{uploaded.name}",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-                key="download_excel"
-            )
-            st.info(f"📄 Translations saved to sheet: **{target_sheet}**")
-        else:
-            out_xlsx = build_excel_from_df(out_df, output_sheet_name)
-            st.download_button(
-                "📥 Download Excel File",
-                data=out_xlsx,
-                file_name="translation_list.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-                key="download_excel_csv"
-            )
-    
+        # خروجی فقط یک شیت (نه کل فایل/نه کل دیتاست)
+        out_xlsx = build_excel_from_df(out_df, output_sheet_name)
+
+        safe_base = re.sub(r'[^a-zA-Z0-9_-]+', '_', uploaded.name.rsplit('.', 1)[0])
+        out_name = f"translation_list_{safe_base}.xlsx"
+
+        st.download_button(
+            "📥 Download Excel (One Sheet Only)",
+            data=out_xlsx,
+            file_name=out_name,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+            key="download_excel_one_sheet"
+        )
+        st.info(f"📄 Export contains only one sheet: **{(output_sheet_name or 'Translation_List')}**")
+
     with col_d2:
         # ذخیره به صورت CSV
         csv_data = out_df.to_csv(index=False).encode('utf-8-sig')
