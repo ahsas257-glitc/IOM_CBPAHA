@@ -25,16 +25,22 @@ def read_dataset(uploaded_file):
         return {"type": "excel", "xls": xls, "sheets": xls.sheet_names}
     raise ValueError("Only CSV or XLSX/XLSM files are supported.")
 
-def extract_translation_list(df: pd.DataFrame, exclude_cols: list[str], remove_duplicates: bool):
+def extract_translation_list(df: pd.DataFrame, key_col: str, exclude_cols: list[str], remove_duplicates: bool):
     rows = []
-    cols = [c for c in df.columns if c not in exclude_cols]
+    cols = [c for c in df.columns if c not in set(exclude_cols)]
 
-    for col in cols:
-        for val in df[col]:
+    for idx, row in df.iterrows():
+        key_raw = row.get(key_col, "")
+        key_val = str(key_raw).strip()
+        if not key_val or key_val.lower() in {"nan", "none", "null"}:
+            key_val = f"ROW_{idx+1:06d}"
+
+        for col in cols:
+            val = row.get(col, "")
             if is_dari_pashto_text(val):
                 rows.append(
                     {
-                        "key": col,
+                        "key": key_val,
                         "label": col,
                         "value": str(val).strip(),
                     }
@@ -43,7 +49,7 @@ def extract_translation_list(df: pd.DataFrame, exclude_cols: list[str], remove_d
     out = pd.DataFrame(rows, columns=["key", "label", "value"])
 
     if remove_duplicates and not out.empty:
-        out = out.drop_duplicates(subset=["key", "value"]).reset_index(drop=True)
+        out = out.drop_duplicates(subset=["key", "label", "value"]).reset_index(drop=True)
 
     return out
 
@@ -55,7 +61,7 @@ def write_back_to_excel(original_file, selected_sheet, out_df, mode, output_shee
 
     target_sheet = selected_sheet
     if mode == "Create new sheet":
-        base = output_sheet_name.strip() or "Translation_List"
+        base = (output_sheet_name or "").strip() or "Translation_List"
         name = base
         i = 1
         while name in wb.sheetnames:
@@ -83,8 +89,15 @@ def write_back_to_excel(original_file, selected_sheet, out_df, mode, output_shee
     buff.seek(0)
     return buff, target_sheet
 
+def build_excel_from_df(out_df: pd.DataFrame, sheet_name: str):
+    buff = BytesIO()
+    with pd.ExcelWriter(buff, engine="openpyxl") as writer:
+        out_df.to_excel(writer, sheet_name=sheet_name or "Translation_List", index=False)
+    buff.seek(0)
+    return buff
+
 st.markdown("## 🗂️ Missing Translation Extractor (Dari/Pashto)")
-st.caption("Upload a dataset → select a sheet → (optional) exclude columns → export the translation list to Excel")
+st.caption("Upload a dataset → select a sheet → choose key column → (optional) exclude columns → download Excel")
 
 uploaded = st.file_uploader("📤 Upload Dataset (Excel .xlsx/.xlsm or CSV)", type=["xlsx", "xlsm", "csv"])
 
@@ -115,33 +128,41 @@ with left:
 
 with right:
     st.write("### Options")
+
+    key_col = st.selectbox(
+        "🔑 Select Key Column",
+        options=list(df.columns),
+        index=0,
+        help="This column will be used as the key in the exported list."
+    )
+
     exclude_cols = st.multiselect(
         "🚫 Columns to Exclude (Optional)",
         options=list(df.columns),
         default=[],
-        help="These columns will not be included in the exported translation list.",
+        help="These columns will not be included in the exported translation list."
     )
 
     if meta["type"] == "excel":
         write_mode = st.selectbox(
             "📝 Output Location",
-            ["Overwrite selected sheet", "Create new sheet"],
+            ["Create new sheet", "Overwrite selected sheet"],
             index=0,
         )
         output_sheet_name = st.text_input(
-            "New Sheet Name (if creating a new sheet)",
+            "Output Sheet Name",
             value="Translation_List",
         )
     else:
         write_mode = "Create new sheet"
         output_sheet_name = "Translation_List"
 
-    remove_duplicates = st.checkbox("Remove duplicates (key+value)", value=True)
+    remove_duplicates = st.checkbox("Remove duplicates (key+label+value)", value=True)
 
 st.markdown("---")
 
 if st.button("⚙️ Generate Master Translation List", type="primary"):
-    out_df = extract_translation_list(df, exclude_cols, remove_duplicates)
+    out_df = extract_translation_list(df, key_col, exclude_cols, remove_duplicates)
 
     if out_df.empty:
         st.warning("No Dari/Pashto text was found (or all relevant columns were excluded).")
@@ -159,19 +180,16 @@ if st.button("⚙️ Generate Master Translation List", type="primary"):
             output_sheet_name=output_sheet_name,
         )
         st.download_button(
-            "📥 Download Updated Excel",
+            "📥 Download Excel",
             data=out_file,
-            file_name=f"updated_{uploaded.name}",
+            file_name=f"translations_{uploaded.name}",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
         st.info(f"Output written to sheet: **{target_sheet}**")
     else:
-        out_xlsx = BytesIO()
-        with pd.ExcelWriter(out_xlsx, engine="openpyxl") as writer:
-            out_df.to_excel(writer, sheet_name=output_sheet_name, index=False)
-        out_xlsx.seek(0)
+        out_xlsx = build_excel_from_df(out_df, output_sheet_name)
         st.download_button(
-            "📥 Download Excel (Translation List)",
+            "📥 Download Excel",
             data=out_xlsx,
             file_name="translation_list.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
