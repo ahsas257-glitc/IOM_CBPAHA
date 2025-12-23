@@ -275,7 +275,7 @@ st.markdown("""
             </p>
         </div>
         <div class="badge">
-            <span style="margin-right: 8px;">✨</span> LIQUID GLASS UI
+            <span style="margin-right: 8px;">✨</span> Missing Translation
         </div>
     </div>
     <div style="display: flex; gap: 16px; margin-top: 20px;">
