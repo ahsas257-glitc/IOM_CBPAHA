@@ -3,54 +3,245 @@ import pandas as pd
 import re
 from io import BytesIO
 
-st.set_page_config(page_title="Missing Translation Extractor", page_icon="🗂️", layout="wide")
-
-st.markdown(
-    """
-<style>
-.stApp{
-  background: linear-gradient(135deg, #f7f9ff 0%, #eef3ff 35%, #f9fbff 100%);
-}
-.block-container{ padding-top: 1.5rem; }
-
-.glass-header{
-  background: rgba(255,255,255,0.55);
-  border: 1px solid rgba(255,255,255,0.75);
-  border-radius: 22px;
-  padding: 18px 22px;
-  box-shadow: 0 14px 30px rgba(30,60,120,0.10);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-}
-.glass-card{
-  background: rgba(255,255,255,0.50);
-  border: 1px solid rgba(255,255,255,0.70);
-  border-radius: 18px;
-  padding: 16px 18px;
-  box-shadow: 0 10px 22px rgba(30,60,120,0.10);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-.small-help{ color: rgba(20,30,60,0.65); font-size: 0.92rem; }
-.hr{
-  height: 1px;
-  margin: 14px 0 18px 0;
-  background: linear-gradient(90deg, transparent, rgba(120,140,200,0.35), transparent);
-  border: none;
-}
-div[data-testid="stDataFrame"]{
-  background: rgba(255,255,255,0.35);
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.55);
-}
-</style>
-""",
-    unsafe_allow_html=True,
+# تنظیمات صفحه
+st.set_page_config(
+    page_title="Missing Translation Extractor", 
+    page_icon="🗂️", 
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
+# استایل‌های Liquid Glass با پس‌زمینه متحرک
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* {
+    font-family: 'Inter', sans-serif;
+}
+
+.stApp {
+    background: linear-gradient(-45deg, 
+        #f0f5ff 0%, 
+        #e8f0ff 25%, 
+        #f8fbff 50%, 
+        #ebf2ff 75%, 
+        #f0f5ff 100%);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    min-height: 100vh;
+}
+
+@keyframes gradientBG {
+    0% { background-position: 0% 50% }
+    50% { background-position: 100% 50% }
+    100% { background-position: 0% 50% }
+}
+
+.main-header {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    border-radius: 24px;
+    padding: 24px 32px;
+    margin-bottom: 30px;
+    box-shadow: 
+        0 8px 32px rgba(31, 38, 135, 0.07),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.main-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(120, 140, 220, 0.3), 
+        transparent);
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(18px) saturate(200%);
+    -webkit-backdrop-filter: blur(18px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 20px;
+    padding: 22px 26px;
+    margin-bottom: 24px;
+    box-shadow: 
+        0 12px 28px rgba(31, 38, 135, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7),
+        0 1px 3px rgba(0, 0, 0, 0.02);
+    transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+    box-shadow: 
+        0 16px 36px rgba(31, 38, 135, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8),
+        0 2px 6px rgba(0, 0, 0, 0.03);
+    transform: translateY(-1px);
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a237e;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.file-uploader {
+    background: rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 2px dashed rgba(120, 140, 220, 0.4) !important;
+    border-radius: 16px !important;
+    padding: 30px !important;
+}
+
+.stButton > button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+    width: 100%;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+.download-btn {
+    background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%) !important;
+    box-shadow: 0 6px 20px rgba(0, 176, 155, 0.3) !important;
+}
+
+.download-btn:hover {
+    background: linear-gradient(135deg, #009b87 0%, #88b837 100%) !important;
+    box-shadow: 0 10px 25px rgba(0, 176, 155, 0.4) !important;
+}
+
+selectbox, .stSelectbox {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border: 1px solid rgba(120, 140, 220, 0.3) !important;
+    border-radius: 12px !important;
+}
+
+.multiselect {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border: 1px solid rgba(120, 140, 220, 0.3) !important;
+    border-radius: 12px !important;
+}
+
+.stDataFrame {
+    background: rgba(255, 255, 255, 0.5) !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(255, 255, 255, 0.6) !important;
+    overflow: hidden;
+}
+
+.stCheckbox > label {
+    color: #333 !important;
+    font-weight: 500 !important;
+}
+
+.stTextInput > div > input {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border: 1px solid rgba(120, 140, 220, 0.3) !important;
+    border-radius: 12px !important;
+}
+
+.stSuccess {
+    background: rgba(76, 175, 80, 0.15) !important;
+    border: 1px solid rgba(76, 175, 80, 0.3) !important;
+    border-radius: 12px !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.stWarning {
+    background: rgba(255, 152, 0, 0.15) !important;
+    border: 1px solid rgba(255, 152, 0, 0.3) !important;
+    border-radius: 12px !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.stInfo {
+    background: rgba(33, 150, 243, 0.15) !important;
+    border: 1px solid rgba(33, 150, 243, 0.3) !important;
+    border-radius: 12px !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.divider {
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(120, 140, 220, 0.4), 
+        transparent);
+    margin: 28px 0;
+    border: none;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(120, 140, 220, 0.4);
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a237e;
+    backdrop-filter: blur(10px);
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    text-align: center;
+    backdrop-filter: blur(10px);
+}
+
+.stat-number {
+    font-size: 32px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 8px 0;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Regular expressions برای تشخیص متن فارسی/پشتو
 ARABIC_BLOCK_RE = re.compile(r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]")
 
 def is_dari_pashto_text(x) -> bool:
+    """بررسی می‌کند که آیا متن شامل حروف فارسی/پشتو است"""
     if x is None:
         return False
     s = str(x).strip()
@@ -59,6 +250,7 @@ def is_dari_pashto_text(x) -> bool:
     return bool(ARABIC_BLOCK_RE.search(s))
 
 def read_dataset(uploaded_file):
+    """خواندن فایل آپلود شده"""
     name = uploaded_file.name.lower()
     if name.endswith(".csv"):
         df = pd.read_csv(uploaded_file, dtype=str, keep_default_na=False)
@@ -69,6 +261,7 @@ def read_dataset(uploaded_file):
     raise ValueError("Only CSV or XLSX/XLSM files are supported.")
 
 def columns_with_dari_pashto(df: pd.DataFrame, limit_scan: int = 2000) -> list[str]:
+    """تشخیص ستون‌هایی که شامل متن فارسی/پشتو هستند"""
     cols = []
     n = min(len(df), limit_scan)
     if n == 0:
@@ -86,6 +279,7 @@ def columns_with_dari_pashto(df: pd.DataFrame, limit_scan: int = 2000) -> list[s
     return cols
 
 def extract_translation_list(df: pd.DataFrame, key_col: str, exclude_cols: list[str], remove_duplicates: bool):
+    """استخراج لیست ترجمه‌ها"""
     rows = []
     exclude_set = set(exclude_cols)
 
@@ -108,6 +302,7 @@ def extract_translation_list(df: pd.DataFrame, key_col: str, exclude_cols: list[
     return out
 
 def write_back_to_excel(original_file, selected_sheet, out_df, mode, output_sheet_name):
+    """نوشتن داده‌ها به فایل اکسل"""
     import openpyxl
 
     original_file.seek(0)
@@ -118,7 +313,7 @@ def write_back_to_excel(original_file, selected_sheet, out_df, mode, output_shee
         base = (output_sheet_name or "").strip() or "Translation_List"
         name = base
         i = 1
-        while name in wb.sheetnames:
+        while name in wb.sheet_names:
             i += 1
             name = f"{base}_{i}"
         wb.create_sheet(title=name)
@@ -144,133 +339,219 @@ def write_back_to_excel(original_file, selected_sheet, out_df, mode, output_shee
     return buff, target_sheet
 
 def build_excel_from_df(out_df: pd.DataFrame, sheet_name: str):
+    """ساخت فایل اکسل از دیتافریم"""
     buff = BytesIO()
     with pd.ExcelWriter(buff, engine="openpyxl") as writer:
         out_df.to_excel(writer, sheet_name=sheet_name or "Translation_List", index=False)
     buff.seek(0)
     return buff
 
-st.markdown(
-    """
-<div class="glass-header">
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;">
-    <div>
-      <div style="font-size:28px;font-weight:800;color:rgba(20,30,60,0.92);">🗂️ Missing Translation Extractor</div>
-      <div class="small-help">Upload dataset → choose sheet → choose key column → exclude only columns that contain Dari/Pashto → download Excel</div>
+# رابط کاربری اصلی
+st.markdown("""
+<div class="main-header">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div>
+            <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #1a237e;">
+                🗂️ Missing Translation Extractor
+            </h1>
+            <p style="margin: 8px 0 0 0; color: #555; font-size: 16px;">
+                Extract Dari/Pashto translations from datasets with ease
+            </p>
+        </div>
+        <div class="badge">
+            <span style="margin-right: 8px;">✨</span> LIQUID GLASS UI
+        </div>
     </div>
-    <div style="padding:10px 14px;border-radius:16px;border:1px solid rgba(255,255,255,0.7);background:rgba(255,255,255,0.45);">
-      <div style="font-size:12px;color:rgba(20,30,60,0.65);letter-spacing:1px;">LIQUID GLASS</div>
-      <div style="font-weight:700;color:rgba(20,30,60,0.85);">Light Theme</div>
+    <div style="display: flex; gap: 16px; margin-top: 20px;">
+        <div class="stat-card">
+            <div class="stat-number" id="rows-count">--</div>
+            <div class="stat-label">Total Rows</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="columns-count">--</div>
+            <div class="stat-label">Columns</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="translations-count">--</div>
+            <div class="stat-label">Translations</div>
+        </div>
     </div>
-  </div>
 </div>
-""",
-    unsafe_allow_html=True,
+""", unsafe_allow_html=True)
+
+st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+
+# بخش آپلود فایل
+st.markdown("""
+<div class="glass-card">
+    <div class="section-title">
+        📤 Upload Dataset
+    </div>
+""", unsafe_allow_html=True)
+
+uploaded = st.file_uploader(
+    "Drag and drop or click to upload Excel (.xlsx/.xlsm) or CSV file", 
+    type=["xlsx", "xlsm", "csv"],
+    label_visibility="collapsed"
 )
 
-st.markdown("<div class='hr'></div>", unsafe_allow_html=True)
-
-uploaded = st.file_uploader("📤 Upload Dataset (Excel .xlsx/.xlsm or CSV)", type=["xlsx", "xlsm", "csv"])
+st.markdown("</div>", unsafe_allow_html=True)
 
 if not uploaded:
+    st.info("👆 Please upload a dataset to get started")
     st.stop()
 
 try:
     meta = read_dataset(uploaded)
 except Exception as e:
-    st.error(str(e))
+    st.error(f"❌ Error reading file: {str(e)}")
     st.stop()
 
+# انتخاب شیت (اگر فایل اکسل باشد)
 selected_sheet = None
 df = None
 
-left, right = st.columns([2, 1], gap="large")
-
-with left:
-    st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-
-    if meta["type"] == "excel":
-        selected_sheet = st.selectbox("📄 Select Sheet", meta["sheets"])
-        df = pd.read_excel(meta["xls"], sheet_name=selected_sheet, dtype=str, keep_default_na=False)
-    else:
-        df = meta["df"]
-
-    st.write("### Preview")
-    st.dataframe(df.head(40), use_container_width=True, height=360)
-
+if meta["type"] == "excel":
+    st.markdown('<div class="glass-card"><div class="section-title">📄 Select Worksheet</div>', unsafe_allow_html=True)
+    selected_sheet = st.selectbox(
+        "Choose the worksheet to analyze:",
+        meta["sheets"],
+        label_visibility="collapsed"
+    )
+    df = pd.read_excel(meta["xls"], sheet_name=selected_sheet, dtype=str, keep_default_na=False)
     st.markdown("</div>", unsafe_allow_html=True)
+else:
+    df = meta["df"]
 
-with right:
-    st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-    st.write("### Settings")
+# به‌روزرسانی آمار
+st.markdown(f"""
+<script>
+document.getElementById('rows-count').textContent = '{len(df):,}';
+document.getElementById('columns-count').textContent = '{len(df.columns)}';
+</script>
+""", unsafe_allow_html=True)
 
+# پیش‌نمایش داده‌ها
+st.markdown('<div class="glass-card"><div class="section-title">👁️ Data Preview</div>', unsafe_allow_html=True)
+st.dataframe(df.head(30), use_container_width=True, height=400)
+st.markdown("</div>", unsafe_allow_html=True)
+
+# تنظیمات استخراج
+st.markdown('<div class="glass-card"><div class="section-title">⚙️ Extraction Settings</div>', unsafe_allow_html=True)
+
+col1, col2 = st.columns(2)
+
+with col1:
     key_col = st.selectbox(
         "🔑 Key Column",
         options=list(df.columns),
         index=0,
-        help="This column will be used as the key in the exported list.",
+        help="This column will be used as the identifier for translations"
     )
-
+    
+    # تشخیص ستون‌های فارسی/پشتو
     cols_dp = columns_with_dari_pashto(df, limit_scan=2000)
-
+    
     if cols_dp:
         exclude_cols = st.multiselect(
-            "🚫 Exclude Columns (only columns that contain Dari/Pashto)",
+            "🚫 Exclude Columns",
             options=cols_dp,
             default=[],
-            help="Only columns that include Dari/Pashto text appear here.",
+            help="Only columns containing Dari/Pashto text are shown here"
         )
     else:
         exclude_cols = []
-        st.info("No columns with Dari/Pashto text were detected in this dataset.")
+        st.info("ℹ️ No columns with Dari/Pashto text were detected")
 
+with col2:
     if meta["type"] == "excel":
         write_mode = st.selectbox(
             "📝 Output Location",
             ["Create new sheet", "Overwrite selected sheet"],
-            index=0,
+            index=0
         )
-        output_sheet_name = st.text_input("Output Sheet Name", value="Translation_List")
+        output_sheet_name = st.text_input(
+            "Output Sheet Name", 
+            value="Translation_List",
+            help="Name of the sheet where translations will be saved"
+        )
     else:
         write_mode = "Create new sheet"
         output_sheet_name = "Translation_List"
+    
+    remove_duplicates = st.checkbox(
+        "Remove duplicate translations", 
+        value=True,
+        help="Remove rows with identical key, label, and value"
+    )
 
-    remove_duplicates = st.checkbox("Remove duplicates (key+label+value)", value=True)
+st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
-st.markdown("<div class='hr'></div>", unsafe_allow_html=True)
-
-if st.button("⚙️ Generate Master Translation List", type="primary"):
-    out_df = extract_translation_list(df, key_col, exclude_cols, remove_duplicates)
-
+# دکمه استخراج
+if st.button("🚀 Generate Translation List", type="primary", use_container_width=True):
+    with st.spinner("🔍 Extracting translations..."):
+        out_df = extract_translation_list(df, key_col, exclude_cols, remove_duplicates)
+    
     if out_df.empty:
-        st.warning("No Dari/Pashto text was found (or all relevant columns were excluded).")
+        st.warning("⚠️ No Dari/Pashto text was found in the dataset (or all relevant columns were excluded)")
         st.stop()
-
-    st.success(f"✅ Extracted: {len(out_df):,} rows")
-    st.dataframe(out_df.head(250), use_container_width=True, height=420)
-
-    if meta["type"] == "excel":
-        out_file, target_sheet = write_back_to_excel(
-            uploaded,
-            selected_sheet,
-            out_df,
-            mode=write_mode,
-            output_sheet_name=output_sheet_name,
-        )
+    
+    # به‌روزرسانی آمار ترجمه‌ها
+    st.markdown(f"""
+    <script>
+    document.getElementById('translations-count').textContent = '{len(out_df):,}';
+    </script>
+    """, unsafe_allow_html=True)
+    
+    st.success(f"✅ Successfully extracted {len(out_df):,} translation entries!")
+    
+    # نمایش نتایج
+    st.markdown('<div class="glass-card"><div class="section-title">📋 Extracted Translations</div>', unsafe_allow_html=True)
+    st.dataframe(out_df.head(200), use_container_width=True, height=450)
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # دکمه دانلود
+    col_d1, col_d2 = st.columns(2)
+    
+    with col_d1:
+        if meta["type"] == "excel":
+            out_file, target_sheet = write_back_to_excel(
+                uploaded,
+                selected_sheet,
+                out_df,
+                mode=write_mode,
+                output_sheet_name=output_sheet_name,
+            )
+            st.download_button(
+                "📥 Download Updated Excel File",
+                data=out_file,
+                file_name=f"translations_{uploaded.name}",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                key="download_excel"
+            )
+            st.info(f"📄 Translations saved to sheet: **{target_sheet}**")
+        else:
+            out_xlsx = build_excel_from_df(out_df, output_sheet_name)
+            st.download_button(
+                "📥 Download Excel File",
+                data=out_xlsx,
+                file_name="translation_list.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                key="download_excel_csv"
+            )
+    
+    with col_d2:
+        # ذخیره به صورت CSV
+        csv_data = out_df.to_csv(index=False).encode('utf-8-sig')
         st.download_button(
-            "📥 Download Excel",
-            data=out_file,
-            file_name=f"translations_{uploaded.name}",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-        st.info(f"Output written to sheet: **{target_sheet}**")
-    else:
-        out_xlsx = build_excel_from_df(out_df, output_sheet_name)
-        st.download_button(
-            "📥 Download Excel",
-            data=out_xlsx,
-            file_name="translation_list.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "📄 Download as CSV",
+            data=csv_data,
+            file_name="translation_list.csv",
+            mime="text/csv",
+            use_container_width=True,
+            key="download_csv"
         )
