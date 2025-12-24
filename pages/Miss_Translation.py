@@ -543,7 +543,7 @@ if st.button("🚀 INITIATE QUANTUM EXTRACTION", type="primary", use_container_w
 
 st.markdown("""
 <div style="text-align: center; margin-top: 40px; color: rgba(255, 255, 255, 0.5); font-size: 12px;">
-    <div style="margin-bottom: 10px;">⚡ Powered by Quantum Glass Technology</div>
-    <div>© 2024 Translation Extractor Pro • v2.0</div>
+    <div style="margin-bottom: 10px;">⚡ Powered by Shabeer Ahmad Ahsas</div>
+    <div>© 2025 Translation Extractor Pro • v2.0</div>
 </div>
 """, unsafe_allow_html=True)
