@@ -16,15 +16,16 @@ st.markdown("""
 
 * {
     font-family: 'Poppins', sans-serif;
+    color: #ffffff;
 }
 
 .stApp {
     background: linear-gradient(135deg, 
-        rgba(10, 15, 40, 0.95) 0%, 
-        rgba(30, 40, 90, 0.92) 25%, 
-        rgba(50, 30, 80, 0.95) 50%, 
-        rgba(70, 20, 60, 0.92) 75%, 
-        rgba(10, 15, 40, 0.95) 100%);
+        #0a0f1a 0%, 
+        #121828 25%, 
+        #1a1a2e 50%, 
+        #16213e 75%, 
+        #0a0f1a 100%);
     background-size: 400% 400%;
     animation: cosmicFloat 20s ease infinite;
     min-height: 100vh;
@@ -38,23 +39,23 @@ st.markdown("""
 
 .neon-glow {
     text-shadow: 
-        0 0 10px rgba(0, 255, 255, 0.7),
-        0 0 20px rgba(0, 255, 255, 0.5),
-        0 0 30px rgba(0, 255, 255, 0.3);
+        0 0 10px rgba(255, 255, 255, 0.3),
+        0 0 20px rgba(255, 255, 255, 0.2),
+        0 0 30px rgba(255, 255, 255, 0.1);
 }
 
 .crystal-panel {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(25px) saturate(200%);
-    -webkit-backdrop-filter: blur(25px) saturate(200%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 28px;
     padding: 28px 34px;
     margin-bottom: 30px;
     box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.5);
     position: relative;
     overflow: hidden;
 }
@@ -68,7 +69,7 @@ st.markdown("""
     height: 100%;
     background: linear-gradient(90deg, 
         transparent, 
-        rgba(255, 255, 255, 0.1), 
+        rgba(255, 255, 255, 0.05), 
         transparent);
     animation: shimmer 3s infinite;
 }
@@ -80,10 +81,10 @@ st.markdown("""
 
 .quantum-card {
     background: linear-gradient(145deg, 
-        rgba(255, 255, 255, 0.12) 0%, 
-        rgba(255, 255, 255, 0.08) 100%);
-    backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+        rgba(255, 255, 255, 0.08) 0%, 
+        rgba(255, 255, 255, 0.04) 100%);
+    backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 24px;
     padding: 24px 28px;
     margin-bottom: 24px;
@@ -100,7 +101,10 @@ st.markdown("""
     right: -2px;
     bottom: -2px;
     background: linear-gradient(45deg, 
-        #00ffff, #ff00ff, #ffff00, #00ffff);
+        rgba(255, 255, 255, 0.3), 
+        rgba(200, 200, 255, 0.2), 
+        rgba(255, 255, 255, 0.3), 
+        rgba(255, 255, 255, 0.2));
     background-size: 400% 400%;
     border-radius: 26px;
     z-index: -1;
@@ -110,7 +114,7 @@ st.markdown("""
 }
 
 .quantum-card:hover::after {
-    opacity: 1;
+    opacity: 0.3;
 }
 
 @keyframes gradientBorder {
@@ -127,8 +131,8 @@ st.markdown("""
 }
 
 .neon-stat {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(0, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 20px;
     padding: 22px;
     text-align: center;
@@ -139,8 +143,8 @@ st.markdown("""
 
 .neon-stat:hover {
     transform: translateY(-5px);
-    border-color: rgba(0, 255, 255, 0.6);
-    box-shadow: 0 10px 30px rgba(0, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
 }
 
 .neon-stat::before {
@@ -151,7 +155,9 @@ st.markdown("""
     right: 0;
     height: 3px;
     background: linear-gradient(90deg, 
-        #00ffff, #ff00ff, #ffff00);
+        rgba(255, 255, 255, 0.5), 
+        rgba(200, 200, 255, 0.3), 
+        rgba(255, 255, 255, 0.5));
     background-size: 200% 100%;
     animation: statGlow 2s linear infinite;
 }
@@ -165,7 +171,7 @@ st.markdown("""
     font-size: 42px;
     font-weight: 700;
     background: linear-gradient(135deg, 
-        #00ffff 0%, #ff00ff 50%, #ffff00 100%);
+        #ffffff 0%, #ccccff 50%, #ffffff 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin: 10px 0;
@@ -174,7 +180,7 @@ st.markdown("""
 
 .stat-label {
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.9);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 1.5px;
@@ -183,7 +189,7 @@ st.markdown("""
 .section-title {
     font-size: 20px;
     font-weight: 600;
-    color: white;
+    color: #ffffff;
     margin-bottom: 20px;
     display: flex;
     align-items: center;
@@ -193,21 +199,22 @@ st.markdown("""
 .section-title::before {
     content: '⟠';
     font-size: 24px;
-    color: #00ffff;
+    color: #ffffff;
+    opacity: 0.8;
 }
 
 .stButton > button {
     background: linear-gradient(135deg, 
-        rgba(0, 255, 255, 0.9) 0%, 
-        rgba(255, 0, 255, 0.9) 100%);
-    color: white;
-    border: none;
+        rgba(255, 255, 255, 0.15) 0%, 
+        rgba(200, 200, 255, 0.15) 100%);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
     padding: 16px 36px;
     border-radius: 16px;
     font-weight: 600;
     font-size: 17px;
     transition: all 0.3s ease;
-    box-shadow: 0 8px 32px rgba(0, 255, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
     width: 100%;
     position: relative;
     overflow: hidden;
@@ -222,7 +229,7 @@ st.markdown("""
     height: 100%;
     background: linear-gradient(90deg, 
         transparent, 
-        rgba(255, 255, 255, 0.2), 
+        rgba(255, 255, 255, 0.1), 
         transparent);
     transition: 0.5s;
 }
@@ -233,7 +240,10 @@ st.markdown("""
 
 .stButton > button:hover {
     transform: translateY(-3px);
-    box-shadow: 0 15px 40px rgba(0, 255, 255, 0.4);
+    box-shadow: 0 15px 40px rgba(255, 255, 255, 0.15);
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.2) 0%, 
+        rgba(200, 200, 255, 0.2) 100%);
 }
 
 .stDataFrame {
@@ -247,9 +257,9 @@ st.markdown("""
     height: 2px;
     background: linear-gradient(90deg, 
         transparent, 
-        #00ffff, 
-        #ff00ff, 
-        #ffff00, 
+        rgba(255, 255, 255, 0.5), 
+        rgba(200, 200, 255, 0.3), 
+        rgba(255, 255, 255, 0.5), 
         transparent);
     margin: 32px 0;
     border: none;
@@ -257,17 +267,50 @@ st.markdown("""
 }
 
 .file-input {
-    border: 2px dashed rgba(0, 255, 255, 0.3);
+    border: 2px dashed rgba(255, 255, 255, 0.3);
     border-radius: 20px;
     padding: 40px;
     text-align: center;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.05);
     transition: all 0.3s ease;
+    color: #ffffff;
 }
 
 .file-input:hover {
-    border-color: rgba(0, 255, 255, 0.6);
-    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.stSelectbox > div > div,
+.stMultiselect > div > div,
+.stTextInput > div > div > input,
+.stCheckbox > label {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.stSelectbox > div > div:hover,
+.stMultiselect > div > div:hover {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.stSelectbox svg,
+.stMultiselect svg {
+    fill: #ffffff !important;
+}
+
+.stCheckbox > label > div:first-child {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.stCheckbox > label > div:first-child:hover {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.stCheckbox > label > div:first-child > div {
+    background: #ffffff !important;
 }
 
 .particle {
@@ -277,6 +320,49 @@ st.markdown("""
     background: rgba(255, 255, 255, 0.5);
     border-radius: 50%;
     pointer-events: none;
+}
+
+.stSuccess {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.stInfo {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.stWarning {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.stError {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.stSpinner > div {
+    color: #ffffff !important;
+}
+
+.stDownloadButton > button {
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.15) 0%, 
+        rgba(200, 200, 255, 0.15) 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.stDownloadButton > button:hover {
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.2) 0%, 
+        rgba(200, 200, 255, 0.2) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
 </style>
@@ -373,8 +459,8 @@ def build_excel_from_df(out_df: pd.DataFrame, sheet_name: str):
 st.markdown("""
 <div class="crystal-panel">
     <div style="text-align: center; margin-bottom: 10px;">
-        <h1 class="neon-glow" style="font-size: 48px; margin: 0; color: white;">⚡ TRANSLATION EXTRACTOR PRO</h1>
-        <p style="color: rgba(255, 255, 255, 0.8); font-size: 18px; margin-top: 10px;">
+        <h1 class="neon-glow" style="font-size: 48px; margin: 0; color: #ffffff;">⚡ TRANSLATION EXTRACTOR PRO</h1>
+        <p style="color: rgba(255, 255, 255, 0.9); font-size: 18px; margin-top: 10px;">
             Quantum-Powered Translation Extraction Engine
         </p>
     </div>
@@ -386,17 +472,17 @@ st.markdown("""
     <div class="neon-stat">
         <div class="stat-label">Total Rows</div>
         <div class="stat-number" id="total-rows">0</div>
-        <div style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">Dataset Size</div>
+        <div style="color: rgba(255, 255, 255, 0.7); font-size: 12px;">Dataset Size</div>
     </div>
     <div class="neon-stat">
         <div class="stat-label">Total Columns</div>
         <div class="stat-number" id="total-columns">0</div>
-        <div style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">Data Structure</div>
+        <div style="color: rgba(255, 255, 255, 0.7); font-size: 12px;">Data Structure</div>
     </div>
     <div class="neon-stat">
         <div class="stat-label">Translations</div>
         <div class="stat-number" id="total-translations">0</div>
-        <div style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">Extracted Items</div>
+        <div style="color: rgba(255, 255, 255, 0.7); font-size: 12px;">Extracted Items</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -414,10 +500,10 @@ st.markdown("</div>", unsafe_allow_html=True)
 
 if not uploaded:
     st.markdown("""
-    <div style="text-align: center; padding: 60px; color: rgba(255, 255, 255, 0.7);">
+    <div style="text-align: center; padding: 60px; color: rgba(255, 255, 255, 0.8);">
         <div style="font-size: 64px; margin-bottom: 20px;">🌌</div>
-        <h3 style="color: white;">Ready for Quantum Processing</h3>
-        <p>Upload your dataset to begin extraction</p>
+        <h3 style="color: #ffffff;">Ready for Quantum Processing</h3>
+        <p style="color: rgba(255, 255, 255, 0.8);">Upload your dataset to begin extraction</p>
     </div>
     """, unsafe_allow_html=True)
     st.stop()
@@ -542,8 +628,8 @@ if st.button("🚀 INITIATE QUANTUM EXTRACTION", type="primary", use_container_w
             )
 
 st.markdown("""
-<div style="text-align: center; margin-top: 40px; color: rgba(255, 255, 255, 0.5); font-size: 12px;">
-    <div style="margin-bottom: 10px;">⚡ Powered by Shabeer Ahmad Ahsas</div>
-    <div>© 2025 Translation Extractor Pro • v2.0</div>
+<div style="text-align: center; margin-top: 40px; color: rgba(255, 255, 255, 0.6); font-size: 12px;">
+    <div style="margin-bottom: 10px; color: rgba(255, 255, 255, 0.7);">⚡ Powered by Shabeer Ahmad Ahsas</div>
+    <div style="color: rgba(255, 255, 255, 0.6);">© 2025 Translation Extractor Pro • v2.0</div>
 </div>
 """, unsafe_allow_html=True)
