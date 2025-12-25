@@ -3,7 +3,6 @@ import pandas as pd
 import re
 import time
 from io import BytesIO
-
 from deep_translator import GoogleTranslator, MyMemoryTranslator
 
 # ---------------------------
@@ -17,7 +16,7 @@ st.set_page_config(
 )
 
 # ---------------------------
-# CSS (همان استایل شما – بدون تغییر جدی)
+# CSS
 # ---------------------------
 st.markdown("""
 <style>
@@ -51,18 +50,6 @@ st.markdown("""
     position: relative;
     overflow: hidden;
 }
-.crystal-panel::before {
-    content: '';
-    position: absolute;
-    top: 0; left: -100%;
-    width: 200%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-    animation: shimmer 3s infinite;
-}
-@keyframes shimmer {
-    0% { transform: translateX(-100%) }
-    100% { transform: translateX(100%) }
-}
 .quantum-card {
     background: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%);
     backdrop-filter: blur(20px) saturate(160%);
@@ -70,9 +57,6 @@ st.markdown("""
     border-radius: 24px;
     padding: 24px 28px;
     margin-bottom: 24px;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
 }
 .stats-grid {
     display: grid;
@@ -88,20 +72,6 @@ st.markdown("""
     text-align: center;
     position: relative;
     overflow: hidden;
-    transition: all 0.3s ease;
-}
-.neon-stat:hover { transform: translateY(-5px); }
-.neon-stat::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, rgba(255,255,255,0.5), rgba(100,200,255,0.3), rgba(255,255,255,0.5));
-    background-size: 200% 100%;
-    animation: statGlow 2s linear infinite;
-}
-@keyframes statGlow {
-    0% { background-position: 0% 0% }
-    100% { background-position: 200% 0% }
 }
 .stat-number {
     font-size: 42px;
@@ -154,11 +124,6 @@ st.markdown("""
     color: #64c8ff;
     border: 1px solid rgba(100,200,255,0.3);
 }
-.pashto-badge {
-    background: rgba(255,200,100,0.2);
-    color: #ffc864;
-    border: 1px solid rgba(255,200,100,0.3);
-}
 .english-badge {
     background: rgba(100,255,100,0.2);
     color: #64ff64;
@@ -184,7 +149,6 @@ ARABIC_BLOCK_RE = re.compile(r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]")
 ENGLISH_RE = re.compile(r'[a-zA-Z]')
 
 def detect_language(text):
-    """Detect if text is Dari/Pashto (Arabic script) or English."""
     if pd.isna(text) or str(text).strip() == "":
         return "empty"
     s = str(text).strip()
@@ -195,16 +159,83 @@ def detect_language(text):
     return "unknown"
 
 # ---------------------------
-# Helpers: chunking + caching + robust translate
+# Do-not-translate protect/restore
+# ---------------------------
+def protect_phrases(text: str, phrases):
+    token_map = {}
+    protected = text
+    for i, p in enumerate(sorted(phrases, key=len, reverse=True)):
+        token = f"__DNT_{i}__"
+        if p and p in protected:
+            protected = protected.replace(p, token)
+            token_map[token] = p
+    return protected, token_map
+
+def restore_phrases(text: str, token_map):
+    restored = text
+    for token, phrase in token_map.items():
+        restored = restored.replace(token, phrase)
+    return restored
+
+# ---------------------------
+# Heuristic: name/place vs sentence
+# ---------------------------
+def looks_like_name_or_place(s: str) -> bool:
+    s = (s or "").strip()
+    if not s:
+        return False
+    if len(s) > 40:
+        return False
+    if any(x in s for x in [".", "؟", "?", "!", "؛", ";", ":", "،", ","]):
+        return False
+    if len(s.split()) >= 6:
+        return False
+    return True
+
+# ---------------------------
+# Transliteration (Arabic script -> Latin)
+# ---------------------------
+AR2LAT = {
+    "ا": "a", "آ": "a", "أ": "a", "إ": "e", "ء": "",
+    "ب": "b", "پ": "p", "ت": "t", "ث": "s",
+    "ج": "j", "چ": "ch", "ح": "h", "خ": "kh",
+    "د": "d", "ذ": "z", "ر": "r", "ز": "z", "ژ": "zh",
+    "س": "s", "ش": "sh", "ص": "s", "ض": "z",
+    "ط": "t", "ظ": "z", "ع": "", "غ": "gh",
+    "ف": "f", "ق": "q", "ک": "k", "گ": "g",
+    "ل": "l", "م": "m", "ن": "n",
+    "ه": "h", "ۀ": "a", "ة": "a",
+    "و": "w", "ؤ": "o", "ی": "y", "ئ": "e", "ى": "a",
+    "ځ": "dz", "څ": "ts", "ښ": "kh", "ڼ": "n", "ږ": "gh", "ډ": "d", "ټ": "t", "ړ": "r",
+    "َ": "", "ُ": "", "ِ": "", "ّ": "", "ْ": "", "ً": "", "ٌ": "", "ٍ": "",
+    "‌": " ", "ـ": "",
+}
+
+def transliterate_arabic_to_latin(text: str) -> str:
+    if text is None:
+        return ""
+    s = str(text).strip()
+    if not s:
+        return s
+    if detect_language(s) == "english":
+        return s
+
+    out = []
+    for ch in s:
+        out.append(AR2LAT.get(ch, ch))
+    roman = "".join(out)
+    roman = re.sub(r"\s+", " ", roman).strip()
+    return roman
+
+# ---------------------------
+# Chunking + caching + robust translate
 # ---------------------------
 def chunk_text(s: str, max_len: int = 4500):
-    """Split long text into chunks to reduce translation failures."""
     s = s.strip()
     if len(s) <= max_len:
         return [s]
 
-    # Split by newlines first, keep paragraphs intact if possible
-    parts = re.split(r"(\n+)", s)  # keep separators
+    parts = re.split(r"(\n+)", s)
     chunks, buf = [], ""
     for part in parts:
         if len(buf) + len(part) <= max_len:
@@ -216,7 +247,6 @@ def chunk_text(s: str, max_len: int = 4500):
     if buf.strip():
         chunks.append(buf)
 
-    # If still huge single chunk, hard-split
     final = []
     for c in chunks:
         if len(c) <= max_len:
@@ -228,53 +258,43 @@ def chunk_text(s: str, max_len: int = 4500):
 
 @st.cache_data(show_spinner=False)
 def cached_translate(provider: str, text: str, target: str = "en") -> str:
-    """
-    Cache translations so repeated sentences won't re-translate.
-    provider: "google" or "mymemory"
-    """
     if provider == "google":
         return GoogleTranslator(source="auto", target=target).translate(text)
     return MyMemoryTranslator(source="auto", target=target).translate(text)
 
 def robust_translate(text: str, target: str, provider_order, retries=3, sleep_base=0.6) -> str:
-    """
-    Try providers with retries/backoff.
-    provider_order: list like ["google","mymemory"]
-    """
     for provider in provider_order:
-        last_err = None
         for attempt in range(retries):
             try:
-                # chunk long text
                 chunks = chunk_text(text, max_len=4500)
                 out = []
                 for ch in chunks:
-                    # slight delay between requests (reduces blocking)
                     time.sleep(0.15)
                     out.append(cached_translate(provider, ch, target=target))
                 return "".join(out).strip()
-            except Exception as e:
-                last_err = e
-                # exponential backoff
+            except Exception:
                 time.sleep(sleep_base * (2 ** attempt))
-        # move to next provider after retries
-    # if everything failed, return original
     return text
 
 def translate_text(text, target="en", provider_order=None):
-    """Translate only Dari/Pashto, keep English as is."""
     if pd.isna(text) or str(text).strip() == "":
         return str(text) if not pd.isna(text) else ""
     s = str(text).strip()
+
     lang = detect_language(s)
     if lang == "english":
         return s
     if lang != "dari_pashto":
         return s
+
     if provider_order is None:
         provider_order = ["google", "mymemory"]
+
     return robust_translate(s, target=target, provider_order=provider_order)
 
+# ---------------------------
+# Export translation sheet
+# ---------------------------
 def create_translation_sheet(df, original_col, translated_col, key_col=None):
     translation_data = []
     for idx, row in df.iterrows():
@@ -303,13 +323,12 @@ def main():
         <div style="text-align: center; margin-bottom: 10px;">
             <h1 class="neon-glow" style="font-size: 46px; margin: 0; color: #ffffff;">🌐 DARI/PASHTO TRANSLATOR PRO</h1>
             <p style="color: rgba(255, 255, 255, 0.9); font-size: 18px; margin-top: 10px;">
-                FREE & Stable-ish Translators (Google + MyMemory Fallback)
+                FREE Translators (Google + MyMemory Fallback) + Transliteration (Names/Places)
             </p>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # Stats Grid
     st.markdown("""
     <div class="stats-grid">
         <div class="neon-stat">
@@ -332,7 +351,6 @@ def main():
 
     st.markdown('<div class="holographic-divider"></div>', unsafe_allow_html=True)
 
-    # Upload
     st.markdown('<div class="quantum-card"><div class="section-title">📤 UPLOAD DATASET</div>', unsafe_allow_html=True)
     uploaded_file = st.file_uploader(
         "Drag & Drop or Click to Upload Excel/CSV File",
@@ -347,12 +365,11 @@ def main():
         <div style="text-align: center; padding: 60px; color: rgba(255, 255, 255, 0.8);">
             <div style="font-size: 64px; margin-bottom: 20px;">📊</div>
             <h3 style="color: #ffffff;">Ready for Translation</h3>
-            <p style="color: rgba(255, 255, 255, 0.8);">Upload your dataset to begin Dari/Pashto to English translation</p>
+            <p style="color: rgba(255, 255, 255, 0.8);">Upload your dataset to begin Dari/Pashto processing</p>
         </div>
         """, unsafe_allow_html=True)
         st.stop()
 
-    # Read dataset
     try:
         if uploaded_file.name.lower().endswith(".csv"):
             df = pd.read_csv(uploaded_file, dtype=str, keep_default_na=False)
@@ -369,20 +386,18 @@ def main():
     </script>
     """, unsafe_allow_html=True)
 
-    # Preview
     st.markdown('<div class="quantum-card"><div class="section-title">👁️ DATA PREVIEW</div>', unsafe_allow_html=True)
     st.dataframe(df.head(10), use_container_width=True, height=300)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Settings
     st.markdown('<div class="quantum-card"><div class="section-title">⚙️ TRANSLATION SETTINGS</div>', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
 
     with col1:
         column_to_translate = st.selectbox(
-            "📝 SELECT COLUMN TO TRANSLATE",
+            "📝 SELECT COLUMN TO PROCESS",
             options=list(df.columns),
-            help="Choose the column containing Dari/Pashto text"
+            help="Choose the column containing Dari/Pashto text (or names/places)"
         )
 
         key_column = st.selectbox(
@@ -406,6 +421,17 @@ def main():
                 st.markdown('<span class="language-badge">Unknown Language</span>', unsafe_allow_html=True)
 
     with col2:
+        st.markdown("### ✨ Output Mode")
+        output_mode = st.selectbox(
+            "How should the selected column be processed?",
+            options=[
+                "Translate to English (meaning)",
+                "Transliterate only (Romanize names/places)",
+                "Auto (Names -> Transliterate, Sentences -> Translate)"
+            ],
+            help="Use Transliterate for beneficiary names, province/district/village names."
+        )
+
         st.markdown("### 🆓 Free Translator Providers")
         provider_mode = st.selectbox(
             "Choose provider strategy:",
@@ -424,11 +450,19 @@ def main():
         else:
             provider_order = ["google", "mymemory"]
 
+        st.markdown("### 🛑 Do Not Translate (keep as-is)")
+        dnt_text = st.text_area(
+            "Enter words/phrases (one per line) that should NEVER be translated (e.g., province/village names):",
+            value="",
+            height=130
+        )
+        do_not_translate_list = [x.strip() for x in dnt_text.splitlines() if x.strip()]
+
         st.markdown("### 📥 EXPORT OPTIONS")
         export_option = st.radio(
             "Choose export format:",
             options=["Replace Original Values", "Add as New Column"],
-            help="Replace original values or add translations as new column"
+            help="Replace original values or add results as new column"
         )
 
         batch_size = st.slider(
@@ -449,77 +483,82 @@ def main():
         )
 
     st.markdown('</div>', unsafe_allow_html=True)
-
     st.markdown('<div class="holographic-divider"></div>', unsafe_allow_html=True)
 
-    if st.button("🚀 START TRANSLATION PROCESS", type="primary", use_container_width=True):
+    if st.button("🚀 START PROCESS", type="primary", use_container_width=True):
         progress_bar = st.progress(0)
         status_text = st.empty()
 
-        # Count rows needing translation
         need_count = sum(1 for v in df[column_to_translate] if detect_language(v) == "dari_pashto")
 
         st.info(
             f"Total Rows: {len(df):,} | "
-            f"Dari/Pashto to translate: {need_count:,} | "
+            f"Dari/Pashto rows: {need_count:,} | "
             f"English/Empty/Other: {len(df) - need_count:,}"
         )
 
-        translated_col_name = f"{column_to_translate}_EN"
-        df[translated_col_name] = ""
+        result_col_name = f"{column_to_translate}_OUT"
+        df[result_col_name] = ""
 
-        total_translated = 0
+        total_processed = 0
 
         for i in range(0, len(df), batch_size):
             batch = df.iloc[i:i + batch_size]
 
             for idx, row in batch.iterrows():
-                original_text = row[column_to_translate]
+                original_text = str(row.get(column_to_translate, "") or "").strip()
 
                 progress_bar.progress((idx + 1) / len(df))
-                status_text.text(f"Translating row {idx+1} of {len(df)}...")
+                status_text.text(f"Processing row {idx+1} of {len(df)}...")
 
-                # delay for stability
                 if delay_ms > 0:
                     time.sleep(delay_ms / 1000.0)
 
-                if detect_language(original_text) == "dari_pashto":
-                    df.at[idx, translated_col_name] = translate_text(
-                        original_text,
-                        target="en",
-                        provider_order=provider_order
-                    )
-                    total_translated += 1
+                # Always keep phrases unchanged (for translation mode)
+                protected_text, token_map = protect_phrases(original_text, do_not_translate_list)
+
+                if output_mode == "Transliterate only (Romanize names/places)":
+                    result = transliterate_arabic_to_latin(original_text)
+
+                elif output_mode == "Auto (Names -> Transliterate, Sentences -> Translate)":
+                    if detect_language(original_text) == "dari_pashto" and looks_like_name_or_place(original_text):
+                        result = transliterate_arabic_to_latin(original_text)
+                    else:
+                        result = translate_text(protected_text, target="en", provider_order=provider_order)
+                        result = restore_phrases(result, token_map)
+
                 else:
-                    df.at[idx, translated_col_name] = str(original_text)
+                    # Translate meaning
+                    result = translate_text(protected_text, target="en", provider_order=provider_order)
+                    result = restore_phrases(result, token_map)
+
+                df.at[idx, result_col_name] = result
+                total_processed += 1
 
             st.markdown(f"""
             <script>
-            document.getElementById('total-translations').textContent = '{total_translated:,}';
+            document.getElementById('total-translations').textContent = '{total_processed:,}';
             </script>
             """, unsafe_allow_html=True)
 
         progress_bar.progress(1.0)
-        status_text.text(f"✅ Translation completed! {total_translated} rows translated.")
+        status_text.text(f"✅ Completed! {total_processed} rows processed.")
 
-        # export choice
         if export_option == "Replace Original Values":
-            df[column_to_translate] = df[translated_col_name]
-            df.drop(columns=[translated_col_name], inplace=True)
-            translated_col_name = column_to_translate
+            df[column_to_translate] = df[result_col_name]
+            df.drop(columns=[result_col_name], inplace=True)
+            result_col_name = column_to_translate
 
-        st.success(f"🎉 Done! {total_translated} Dari/Pashto texts translated.")
+        st.success(f"🎉 Done! {total_processed} rows processed successfully.")
 
-        # Results preview
-        st.markdown('<div class="quantum-card"><div class="section-title">📋 TRANSLATION RESULTS</div>', unsafe_allow_html=True)
+        st.markdown('<div class="quantum-card"><div class="section-title">📋 RESULTS PREVIEW</div>', unsafe_allow_html=True)
         preview_cols = [column_to_translate]
-        if translated_col_name != column_to_translate and translated_col_name in df.columns:
-            preview_cols.append(translated_col_name)
+        if result_col_name != column_to_translate and result_col_name in df.columns:
+            preview_cols.append(result_col_name)
         st.dataframe(df[preview_cols].head(20), use_container_width=True, height=400)
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Export
-        st.markdown('<div class="quantum-card"><div class="section-title">📥 EXPORT TRANSLATIONS</div>', unsafe_allow_html=True)
+        st.markdown('<div class="quantum-card"><div class="section-title">📥 EXPORT</div>', unsafe_allow_html=True)
         col_exp1, col_exp2 = st.columns(2)
 
         safe_name = re.sub(r'[^a-zA-Z0-9_-]+', '_', uploaded_file.name.rsplit('.', 1)[0])
@@ -528,45 +567,42 @@ def main():
             st.markdown("### 📊 Complete Dataset")
             output_complete = BytesIO()
             with pd.ExcelWriter(output_complete, engine='openpyxl') as writer:
-                df.to_excel(writer, sheet_name='Translated_Data', index=False)
+                df.to_excel(writer, sheet_name='Processed_Data', index=False)
 
             st.download_button(
                 label="💾 DOWNLOAD COMPLETE DATASET",
                 data=output_complete.getvalue(),
-                file_name=f"translated_{safe_name}.xlsx",
+                file_name=f"processed_{safe_name}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
             )
 
         with col_exp2:
-            st.markdown("### 📄 Translation Sheet (Log)")
-            # If we replaced original, we cannot build old/new correctly unless we kept original.
-            # In that case, translation log will show same column for original and translated.
+            st.markdown("### 📄 Output Sheet (Log)")
             src_col = column_to_translate
-            dst_col = translated_col_name if translated_col_name in df.columns else column_to_translate
+            dst_col = result_col_name if result_col_name in df.columns else column_to_translate
 
-            translation_df = create_translation_sheet(df, src_col, dst_col, key_column)
+            log_df = create_translation_sheet(df, src_col, dst_col, key_column)
 
-            output_translation = BytesIO()
-            with pd.ExcelWriter(output_translation, engine='openpyxl') as writer:
-                translation_df.to_excel(writer, sheet_name='Translation_Log', index=False)
+            output_log = BytesIO()
+            with pd.ExcelWriter(output_log, engine='openpyxl') as writer:
+                log_df.to_excel(writer, sheet_name='Output_Log', index=False)
                 summary_data = pd.DataFrame({
-                    'Metric': ['Total Rows', 'Translated Rows', 'Source Column', 'Key Column', 'Provider Strategy'],
-                    'Value': [len(df), total_translated, src_col, key_column or 'Auto-generated', provider_mode]
+                    'Metric': ['Total Rows', 'Processed Rows', 'Source Column', 'Key Column', 'Provider Strategy', 'Output Mode'],
+                    'Value': [len(df), total_processed, src_col, key_column or 'Auto-generated', provider_mode, output_mode]
                 })
                 summary_data.to_excel(writer, sheet_name='Summary', index=False)
 
             st.download_button(
-                label="📝 DOWNLOAD TRANSLATION SHEET",
-                data=output_translation.getvalue(),
-                file_name=f"translation_log_{safe_name}.xlsx",
+                label="📝 DOWNLOAD OUTPUT SHEET",
+                data=output_log.getvalue(),
+                file_name=f"output_log_{safe_name}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
             )
 
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Footer
     st.markdown("""
     <div style="text-align: center; margin-top: 40px; color: rgba(255, 255, 255, 0.6); font-size: 12px;">
         <div style="margin-bottom: 10px; color: rgba(255, 255, 255, 0.7);">⚡ Powered by Streamlit + Free Translators</div>
